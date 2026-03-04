@@ -1,11 +1,21 @@
 {{define "navbar"}}
-<header class="bg-emerald-700 text-white shadow-lg">
-    <div class="container mx-auto px-4 py-4">
+<header class="bg-emerald-700 text-white shadow-lg relative overflow-hidden">
+    <!-- Ketupat Pattern Background Overlay -->
+    <div class="absolute inset-0 opacity-10 pointer-events-none" 
+         style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+    </div>
+
+    <div class="container mx-auto px-4 py-4 relative z-10">
         <div class="flex items-center justify-between">
-            <h1 class="text-xl lg:text-3xl font-bold">Hadits.online</h1>
+            <a href="/" class="flex items-center space-x-3 group">
+                <img src="/static/logo.png" alt="Hadits.online Logo" class="h-10 lg:h-12 w-auto drop-shadow-md group-hover:scale-105 transition-transform">
+                <h1 class="text-2xl lg:text-3xl font-extrabold tracking-tight">
+                    Hadits<span class="text-emerald-300">.online</span>
+                </h1>
+            </a>
             
             <!-- Mobile menu button -->
-            <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-md hover:bg-emerald-600 transition-colors">
+            <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
@@ -13,17 +23,28 @@
         </div>
         
         <!-- Mobile menu -->
-        <div id="mobileMenu" class="hidden lg:hidden mt-4 pb-4 border-t border-emerald-600 pt-4">
-            <nav class="flex flex-col space-y-3">
-                <a href="/" class="hover:text-emerald-200 transition py-2">Beranda</a>
-                <a href="/favorites" class="hover:text-emerald-200 transition py-2">Favorit</a>
-                <a href="/#collections" class="hover:text-emerald-200 transition py-2">Koleksi</a>
-                <a href="/faq" class="hover:text-emerald-200 transition py-2">FAQ</a>
-                <a href="/donate" class="hover:text-emerald-200 transition py-2">Donasi</a>
-                <div class="relative pt-2">
-                    <input type="text" id="searchInput" placeholder="Cari hadith..." 
-                        class="px-4 py-2 rounded-lg text-gray-800 bg-white w-full">
-                    <button onclick="performSearch()" class="absolute right-2 top-2.5 text-emerald-600">
+        <div id="mobileMenu" class="hidden lg:hidden mt-4 pb-6 border-t border-white/20 pt-4 animate-fade-in">
+            <nav class="flex flex-col space-y-2" id="mobileNav">
+                <a href="/" data-path="/" class="nav-link-m flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition">
+                    <span>🏠 Beranda</span>
+                </a>
+                <a href="/favorites" data-path="/favorites" class="nav-link-m flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition">
+                    <span>⭐ Favorit</span>
+                </a>
+                <a href="/#collections" data-path="/#collections" class="nav-link-m flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition">
+                    <span>📚 Koleksi</span>
+                </a>
+                <a href="/faq" data-path="/faq" class="nav-link-m flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition">
+                    <span>❓ FAQ</span>
+                </a>
+                <a href="/donate" data-path="/donate" class="nav-link-m flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-emerald-600 transition bg-emerald-800/50 border border-white/10">
+                    <span>💝 Donasi</span>
+                </a>
+                
+                <div class="relative pt-4">
+                    <input type="text" id="searchInput" placeholder="Cari hadits..." 
+                        class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-emerald-100 focus:outline-none focus:bg-white focus:text-gray-900 transition-all shadow-inner">
+                    <button onclick="performSearch()" class="absolute right-3 top-[1.6rem] p-1.5 bg-emerald-600 rounded-lg hover:bg-emerald-500 transition shadow-sm">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
@@ -33,23 +54,29 @@
         </div>
         
         <!-- Desktop menu -->
-        <div class="hidden lg:block mt-4">
-            <nav class="flex items-center justify-center space-x-6">
-                <a href="/" class="hover:text-emerald-200 transition">Beranda</a>
-                <a href="/favorites" class="hover:text-emerald-200 transition">Favorit</a>
-                <a href="/#collections" class="hover:text-emerald-200 transition">Koleksi</a>
-                <a href="/faq" class="hover:text-emerald-200 transition">FAQ</a>
-                <a href="/donate" class="hover:text-emerald-200 transition">Donasi</a>
-                <div class="relative">
-                    <input type="text" id="searchInputDkstp" placeholder="Cari hadith..." 
-                        class="px-4 py-2 rounded-lg text-gray-800 bg-white w-64">
-                    <button onclick="performSearchDekstop()" class="absolute right-2 top-2 text-emerald-600">
+        <div class="hidden lg:flex items-center justify-between mt-6 pt-4 border-t border-white/10">
+            <nav class="flex items-center space-x-1" id="desktopNav">
+                <a href="/" data-path="/" class="nav-link px-4 py-2 rounded-lg hover:bg-white/10 transition font-medium">Beranda</a>
+                <a href="/favorites" data-path="/favorites" class="nav-link px-4 py-2 rounded-lg hover:bg-white/10 transition font-medium">Favorit</a>
+                <a href="/#collections" data-path="/#collections" class="nav-link px-4 py-2 rounded-lg hover:bg-white/10 transition font-medium">Koleksi</a>
+                <a href="/faq" data-path="/faq" class="nav-link px-4 py-2 rounded-lg hover:bg-white/10 transition font-medium">FAQ</a>
+            </nav>
+            
+            <div class="flex items-center space-x-4">
+                <div class="relative group">
+                    <input type="text" id="searchInputDkstp" placeholder="Cari hadits (tekan /)..." 
+                        class="w-72 px-4 py-2 bg-emerald-800/50 border border-emerald-600/50 rounded-xl text-white placeholder-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-emerald-900/80 transition-all shadow-inner">
+                    <button onclick="performSearchDekstop()" class="absolute right-2 top-1.5 p-1 text-emerald-300 hover:text-white transition">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                     </button>
                 </div>
-            </nav>
+                
+                <a href="/donate" data-path="/donate" class="nav-link flex items-center space-x-2 px-5 py-2 bg-yellow-500 hover:bg-yellow-400 text-emerald-900 font-bold rounded-xl transition shadow-lg transform hover:-translate-y-0.5 active:translate-y-0">
+                    <span>💝 Donasi</span>
+                </a>
+            </div>
         </div>
     </div>
     
@@ -58,6 +85,54 @@
             const menu = document.getElementById('mobileMenu');
             menu.classList.toggle('hidden');
         });
+        
+        // Active Link Highlighting
+        function highlightActiveLinks() {
+            const currentPath = window.location.pathname;
+            const links = document.querySelectorAll('.nav-link, .nav-link-m');
+            
+            links.forEach(link => {
+                const linkPath = link.getAttribute('data-path');
+                if (linkPath === currentPath) {
+                    if (link.classList.contains('nav-link')) {
+                        link.classList.add('bg-white/20', 'text-emerald-50');
+                    } else {
+                        link.classList.add('bg-white/20', 'border-l-4', 'border-emerald-300');
+                    }
+                }
+            });
+        }
+
+        // Quick search focus with "/"
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                const searchInput = window.innerWidth >= 1024 ? document.getElementById('searchInputDkstp') : document.getElementById('searchInput');
+                if (searchInput) searchInput.focus();
+            }
+        });
+
+        // Desktop Search Enter Key
+        const desktopSearch = document.getElementById('searchInputDkstp');
+        if (desktopSearch) {
+            desktopSearch.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearchDekstop();
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', highlightActiveLinks);
     </script>
 </header>
+
+<style>
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out forwards;
+    }
+</style>
 {{end}}
