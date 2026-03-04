@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - Sunnah.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-emerald-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+                <div class="order-2 lg:order-1 text-center lg:text-left">
+                    <h1 class="text-3xl lg:text-4xl font-bold mb-4 lg:mb-6">FAQ</h1>
+                    <div class="lg:hidden">
+                        <span class="mx-3">/</span>
+                        <span class="text-xl">Sunnah.com</span>
+                    </div>
+                </div>
+                <div class="order-1 lg:order-2">
+                    {{template "components/navbar.html" .}}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <section class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-800 mb-6">Pertanyaan yang Sering Diajukan</h2>
+                <p class="text-xl text-gray-600 mb-8">
+                    Temukan jawaban untuk pertanyaan umum seputar aplikasi dan hadith.
+                </p>
+            </div>
+
+            <!-- FAQ Items -->
+            <div class="space-y-6">
+                <!-- General Questions -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Aplikasi & Penggunaan</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Apakah aplikasi ini gratis?</h4>
+                            <p class="text-gray-600">Ya, aplikasi Sunnah.com sepenuhnya gratis untuk digunakan. Tidak ada biaya berlangganan atau fitur tersembunyi.</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Bagaimana cara menyimpan hadith favorit?</h4>
+                            <p class="text-gray-600">Klik tombol hati (❤️) pada halaman hadith untuk menambahkan ke daftar favorit Anda. Favorit tersimpan di browser Anda.</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Apakah data hadith akurat?</h4>
+                            <p class="text-gray-600">Hadith diambil dari sumber terpercaya seperti <strong>Kitab Suci</strong> (Shahih Bukhari, Muslim, Abu Dawud, dll). Setiap hadith mencantumkan nomor kitab dan referensi yang jelas.</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Bagaimana cara mencari hadith?</h4>
+                            <p class="text-gray-600">Gunakan fitur pencarian dengan kata kunci, atau filter berdasarkan kitab, nomor hadith, atau bahasa (Arab/Indonesia).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Questions -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Teknis & Bantuan</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Browser apa yang didukung?</h4>
+                            <p class="text-gray-600">Aplikasi ini berfungsi optimal di browser modern: Chrome, Firefox, Safari, Edge, dan browser berbasis Chromium.</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Apakah ada aplikasi mobile?</h4>
+                            <p class="text-gray-600">Saat ini aplikasi sudah responsif dan dapat digunakan dengan baik di perangkat mobile.</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Bagaimana melaporkan bug?</h4>
+                            <p class="text-gray-600">Jika menemukan bug atau masalah, silakan laporkan melalui GitHub repository atau hubungi pengembang.</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Apakah data saya aman?</h4>
+                            <p class="text-gray-600">Ya, semua data hadith disimpan lokal di browser Anda. Kami tidak mengumpulkan informasi pribadi.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Questions -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Konten & Sumber</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Dari mana sumber hadith?</h4>
+                            <p class="text-gray-600">Hadith diambil dari <strong>sumber terbuka</strong> yang dapat diakses umat, dengan tetap menghormati hak cipta dan referensi ke kitab asli.</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Bagaimana cara kontribusi?</h4>
+                            <p class="text-gray-600">Anda dapat berkontribusi melalui:
+                            </p>
+                            <ul class="list-disc list-inside ml-6 space-y-2 text-gray-600">
+                                <li><strong>Donasi:</strong> Untuk mendukung keberlangsungan aplikasi</li>
+                                <li><strong>Laporan Bug:</strong> Melalui GitHub repository</li>
+                                <li><strong>Saran:</strong> Untuk perbaikan dan pengembangan fitur</li>
+                                <li><strong>Sebar:</strong> Memberitahu orang lain tentang aplikasi ini</li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">Apakah tersedia terjemahan bahasa lain?</h4>
+                            <p class="text-gray-600">Saat ini tersedia dalam bahasa Indonesia dan Arab. Untuk masa depan, kami merencanakan untuk menambahkan terjemahan dalam bahasa lain.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Sunnah.com - Kumpulan Hadits Nabi Muhammad SAW</p>
+            <p class="text-gray-400">© 2026 - Dibuat dengan cinta untuk pembelajaran Islam</p>
+            <div class="mt-4 text-sm text-gray-500">
+                <p class="mb-2">Masih ada pertanyaan? <a href="mailto:support@sunnah.com" class="text-emerald-600 hover:text-emerald-800 underline">Hubungi kami</a></p>
+                <p>GitHub: <a href="https://github.com/MaulanaR/hadits-online/issues" class="text-emerald-600 hover:text-emerald-800 underline">github.com/MaulanaR/hadits-online</a></p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

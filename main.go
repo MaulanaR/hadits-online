@@ -504,7 +504,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := template.Must(template.New("search.html").Funcs(funcMap).ParseFiles("templates/search.html"))
 	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("Template execution error in searchHandler: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
 
@@ -772,7 +773,37 @@ func main() {
 		}{Path: r.URL.Path})
 	})
 
-	log.Println("Server starting on :8081")
-	log.Println("Access the application at: http://localhost:8081")
-	log.Fatal(http.ListenAndServe(":8081", r))
+	log.Println("Server starting on :8082")
+	log.Println("Access the application at: http://localhost:8082")
+	log.Fatal(http.ListenAndServe(":8082", r))
+}
+
+// Donation page handler
+func donateHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.New("donate.html").Funcs(template.FuncMap{
+		"add":       add,
+		"add1":      add1,
+		"subtract":  subtract,
+		"multiply":  multiply,
+		"pageNumbers": pageNumbers,
+	}).ParseFiles("templates/donate.html"))
+	
+	if err := tmpl.Execute(w, nil); err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// FAQ page handler
+func faqHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.New("faq.html").Funcs(template.FuncMap{
+		"add":       add,
+		"add1":      add1,
+		"subtract":  subtract,
+		"multiply":  multiply,
+		"pageNumbers": pageNumbers,
+	}).ParseFiles("templates/faq.html"))
+	
+	if err := tmpl.Execute(w, nil); err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+	}
 }

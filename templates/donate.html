@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donasi - Sunnah.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-emerald-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+                <div class="order-2 lg:order-1 text-center lg:text-left">
+                    <h1 class="text-3xl lg:text-4xl font-bold mb-4 lg:mb-6">Donasi</h1>
+                    <div class="lg:hidden">
+                        <span class="mx-3">/</span>
+                        <span class="text-xl">Sunnah.com</span>
+                    </div>
+                </div>
+                <div class="order-1 lg:order-2">
+                    {{template "components/navbar.html" .}}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Donation Hero -->
+        <section class="text-center mb-12">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl font-bold text-gray-800 mb-6">Dukung Pengembangan Aplikasi</h2>
+                <p class="text-xl text-gray-600 mb-8">
+                    Aplikasi Sunnah.com disediakan untuk <span class="text-emerald-600 font-semibold">demi keberlangsungan</span> dan kemudahan akses gratis bagi semua umat Islam.
+                </p>
+                
+                <!-- Donation Progress -->
+                <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Target Donasi Tahun Ini</h3>
+                    <div class="text-3xl font-bold text-emerald-600 mb-2">Rp 15.000.000</div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-gray-600 mb-2">Rp 0</div>
+                            <div class="text-sm text-gray-500">Terkumpul</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-emerald-600 mb-2">Rp 5.000.000</div>
+                            <div class="text-sm text-gray-500">33%</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-emerald-600 mb-2">Rp 10.000.000</div>
+                            <div class="text-sm text-gray-500">67%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Why Donate -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Mengapa Donasi Penting?</h3>
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-2h4v2h4a2 2 0 002 2v3a1 1 0 001-1h-4a1 1 0 011 1z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-semibold text-gray-800">Biaya Server & Domain</h4>
+                            <p class="text-gray-600">
+                                Setiap tahun, kami membutuhkan biaya untuk server, domain, dan maintenance untuk memastikan aplikasi tetap berjalan lancar.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 6h6v6H6a2 2 0 00-2-2h12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-semibold text-gray-800">Pengembangan & Maintenance</h4>
+                            <p class="text-gray-600">
+                                Donasi digunakan untuk pengembangan fitur baru, perbaikan bug, dan peningkatan performa aplikasi.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 2h2a2 2 0 002-2h-4a2 2 0 00-2 2v3a1 1 0 001 1h4a1 1 0 011 1zm-1 0h6v6h-6a2 2 0 00-2-2h-4a2 2 0 002-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-semibold text-gray-800">Keberlangsungan</h4>
+                            <p class="text-gray-600">
+                                Aplikasi ini akan terus dikembangkan dan dirawat secara terbuka oleh tim developer. Sumber daya terbuka untuk umat Islam.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How to Donate -->
+        <section class="bg-white rounded-lg shadow-md p-8">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">Cara Donasi</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">Transfer Bank</h4>
+                    <div class="space-y-2 text-gray-600">
+                        <p><strong>BCA:</strong> 1234567890 (An. Maulana Rahmat)</p>
+                        <p><strong>Mandiri:</strong> 9876543210 (An. Siti Aminah)</p>
+                        <p><strong>BRI:</strong> 1122334455 (An. Ahmad Fadli)</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">E-Wallet</h4>
+                    <div class="space-y-2 text-gray-600">
+                        <p><strong>OVO:</strong> 081234567890</p>
+                        <p><strong>Gopay:</strong> 081234567891</p>
+                        <p><strong>DANA:</strong> 081234567892</p>
+                        <p><strong>ShopeePay:</strong> 081234567893</p>
+                    </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Sunnah.com - Kumpulan Hadits Nabi Muhammad SAW</p>
+            <p class="text-gray-400">© 2026 - Dibuat dengan cinta untuk pembelajaran Islam</p>
+            <div class="mt-4 text-sm text-gray-500">
+                <p class="mb-2"><strong>Transparansi:</strong> Semua donasi akan dilaporkan secara berkala.</p>
+                <p>Terima kasih atas dukungan Anda!</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
