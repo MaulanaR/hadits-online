@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunnah.com - Kumpulan Hadits</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .arabic-text {
+            font-family: 'Amiri Quran', serif;
+            line-height: 2.5;
+            font-size: 1.5rem;
+        }
+        .indonesian-text {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-emerald-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <h1 class="text-2xl md:text-3xl font-bold mb-4 md:mb-0">Sunnah.com</h1>
+                <nav class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-6">
+                    <a href="/" class="hover:text-emerald-200 transition">Beranda</a>
+                    <a href="/favorites" class="hover:text-emerald-200 transition flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                        Favorit
+                    </a>
+                    <a href="#collections" class="hover:text-emerald-200 transition">Koleksi</a>
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Cari hadith..." 
+                               class="px-4 py-2 rounded-lg text-gray-800 bg-white w-full md:w-64">
+                        <button onclick="performSearch()" class="absolute right-2 top-2 text-emerald-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Hero Section -->
+        <section class="text-center mb-12">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Kumpulan Hadits Nabi Muhammad ﷺ</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Jelajahi koleksi hadits dari berbagai kitab utama dalam Islam. Akses ribuan hadits terpercaya dengan terjemahan bahasa Indonesia.
+            </p>
+        </section>
+
+        <!-- Statistics -->
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            {{range .}}
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+                <div class="text-3xl font-bold text-emerald-600 mb-2">{{.Total}}</div>
+                <div class="text-gray-700 font-medium">{{.Name}}</div>
+            </div>
+            {{end}}
+        </section>
+
+        <!-- Collections -->
+        <section id="collections" class="mb-12">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6">Koleksi Hadits</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {{range .}}
+                <div class="bg-white rounded-lg shadow-md card-hover">
+                    <div class="p-6">
+                        <h4 class="text-xl font-semibold text-gray-800 mb-2">{{.Name}}</h4>
+                        <p class="text-gray-600 mb-4">{{.Total}} hadits</p>
+                        <a href="/collection/{{.Slug}}" 
+                           class="inline-flex items-center text-emerald-600 hover:text-emerald-800 font-medium transition-all">
+                            Buka Koleksi
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Sunnah.com - Kumpulan Hadits Nabi Muhammad ﷺ</p>
+            <p class="text-gray-400">© 2026 - Dibuat dengan ❤️ untuk pembelajaran Islam</p>
+        </div>
+    </footer>
+
+    <script src="/static/script.js"></script>
+    <script>
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                window.location.href = '/search?q=' + encodeURIComponent(query);
+            }
+        }
+    </script>
+</body>
+</html>

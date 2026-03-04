@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Info.Name}} - Sunnah.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .arabic-text {
+            font-family: 'Amiri Quran', serif;
+            line-height: 2.5;
+            font-size: 1.5rem;
+        }
+        .indonesian-text {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-emerald-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl md:text-3xl font-bold mb-4 md:mb-0 hover:text-emerald-200 transition">Sunnah.com</a>
+                    <span class="mx-3">/</span>
+                    <span class="text-xl">{{.Info.Name}}</span>
+                </div>
+                <nav class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-6">
+                    <a href="/" class="hover:text-emerald-200 transition">Beranda</a>
+                    <a href="/collection/{{.Collection}}" class="hover:text-emerald-200 transition">Koleksi</a>
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Cari hadith..." 
+                               class="px-4 py-2 rounded-lg text-gray-800 bg-white w-full md:w-64">
+                        <button onclick="performSearch()" class="absolute right-2 top-2 text-emerald-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Collection Header -->
+        <section class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">{{.Info.Name}}</h1>
+            <p class="text-lg text-gray-600">Total: {{.Info.Total}} hadits</p>
+        </section>
+
+        <!-- Hadiths List -->
+        <section id="hadiths-container" class="space-y-6">
+            {{if .Hadiths}}
+                <!-- Search within Collection -->
+        <section class="mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    Cari dalam {{.Info.Name}}
+                </h3>
+                <form onsubmit="searchInCollection(event)" class="flex space-x-2">
+                    <input type="text" id="collectionSearch" 
+                           placeholder="Cari hadith dalam koleksi ini..." 
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <button type="submit" 
+                            class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition">
+                        🔍 Cari
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Pagination Info -->
+                <div class="bg-white rounded-lg shadow-md p-4 flex flex-wrap justify-between items-center">
+                    <div class="text-gray-600">
+                        Menampilkan hadith {{if gt .Pagination.CurrentPage 1}}{{subtract (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.PerPage | add1}}{{else}}1{{end}} 
+                        hingga {{if lt (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.TotalItems}}{{multiply .Pagination.CurrentPage .Pagination.PerPage}}{{else}}{{.Pagination.TotalItems}}{{end}} 
+                        dari {{.Pagination.TotalItems}} hadith
+                    </div>
+                    <div class="flex space-x-2 mt-2 md:mt-0">
+                        {{if .Pagination.HasPrev}}
+                            <a href="?page={{subtract .Pagination.CurrentPage 1}}" 
+                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                                ← Sebelumnya
+                            </a>
+                        {{end}}
+                        
+                        <!-- Page Numbers -->
+                        {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
+                            {{if eq $i $.Pagination.CurrentPage}}
+                                <span class="px-3 py-1 bg-emerald-600 text-white rounded">{{$i}}</span>
+                            {{else}}
+                                <a href="?page={{$i}}" 
+                                   class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+                                   onclick="loadPage({{$i}}); return false;">
+                                    {{$i}}
+                                </a>
+                            {{end}}
+                        {{end}}
+                        
+                        {{if .Pagination.HasNext}}
+                            <a href="?page={{add .Pagination.CurrentPage 1}}" 
+                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                                Selanjutnya →
+                            </a>
+                        {{end}}
+                    </div>
+                </div>
+
+                <!-- Hadiths -->
+                {{range .Hadiths}}
+                <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-700">Hadith {{.Number}}</h3>
+                            <a href="/collection/{{$.Collection}}/{{.Number}}" 
+                               class="text-emerald-600 hover:text-emerald-800 font-medium text-sm">
+                                Lihat Detail →
+                            </a>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="arabic-text text-right text-gray-800 leading-loose">
+                                {{.Arab}}
+                            </div>
+                            <div class="indonesian-text text-gray-700 text-sm md:text-base">
+                                <span class="font-medium text-emerald-700">Terjemahan:</span> {{.ID}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+
+                <!-- Bottom Pagination -->
+                {{if gt .Pagination.TotalPages 1}}
+                <div class="bg-white rounded-lg shadow-md p-4 flex justify-center">
+                    <div class="flex space-x-2">
+                        {{if .Pagination.HasPrev}}
+                            <a href="?page={{subtract .Pagination.CurrentPage 1}}" 
+                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                                ← Sebelumnya
+                            </a>
+                        {{end}}
+                        
+                        {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
+                            {{if eq $i $.Pagination.CurrentPage}}
+                                <span class="px-3 py-1 bg-emerald-600 text-white rounded">{{$i}}</span>
+                            {{else}}
+                                <a href="?page={{$i}}" 
+                                   class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                                    {{$i}}
+                                </a>
+                            {{end}}
+                        {{end}}
+                        
+                        {{if .Pagination.HasNext}}
+                            <a href="?page={{add .Pagination.CurrentPage 1}}" 
+                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                                Selanjutnya →
+                            </a>
+                        {{end}}
+                    </div>
+                </div>
+                {{end}}
+            {{else}}
+                <div class="bg-white rounded-lg shadow-md p-8 text-center">
+                    <p class="text-gray-600">Tidak ada hadith yang ditemukan.</p>
+                </div>
+            {{end}}
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Sunnah.com - Kumpulan Hadits Nabi Muhammad ﷺ</p>
+            <p class="text-gray-400">© 2026 - Dibuat dengan ❤️ untuk pembelajaran Islam</p>
+        </div>
+    </footer>
+
+    <script src="/static/script.js"></script>
+    <script>
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                window.location.href = '/search?q=' + encodeURIComponent(query);
+            }
+        }
+
+        function searchInCollection(event) {
+            event.preventDefault();
+            const query = document.getElementById('collectionSearch').value.trim();
+            if (query) {
+                window.location.href = '/search?q=' + encodeURIComponent(query) + '&collections={{.Collection}}';
+            }
+        }
+
+        // Loading states for pagination
+        function loadPage(page) {
+            const collectionContainer = document.getElementById('hadiths-container');
+            showLoading(collectionContainer);
+            
+            setTimeout(() => {
+                window.location.href = '?page=' + page;
+            }, 300);
+        }
+    </script>
+</body>
+</html>

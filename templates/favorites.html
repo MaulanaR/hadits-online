@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favorit Hadith - Sunnah.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .arabic-text {
+            font-family: 'Amiri Quran', serif;
+            line-height: 2.5;
+            font-size: 1.25rem;
+        }
+        .indonesian-text {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-emerald-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl md:text-3xl font-bold mb-4 md:mb-0 hover:text-emerald-200 transition">Sunnah.com</a>
+                    <span class="mx-3">/</span>
+                    <span class="text-xl">Favorit</span>
+                </div>
+                <nav class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-6">
+                    <a href="/" class="hover:text-emerald-200 transition">Beranda</a>
+                    <a href="#collections" class="hover:text-emerald-200 transition">Koleksi</a>
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Cari hadith..." 
+                               class="px-4 py-2 rounded-lg text-gray-800 bg-white w-full md:w-64">
+                        <button onclick="performSearch()" class="absolute right-2 top-2 text-emerald-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <section class="mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">Hadith Favorit</h1>
+                        <p class="text-gray-600">
+                            <span id="favorites-count" class="font-semibold">0</span> hadith disimpan
+                        </p>
+                    </div>
+                    <div class="flex space-x-2 mt-4 md:mt-0">
+                        <button onclick="exportFavorites()" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Ekspor
+                        </button>
+                        <label class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition cursor-pointer">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            Impor
+                            <input type="file" accept=".json" onchange="importFavorites(this.files[0])" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Favorites List -->
+        <section id="favorites-container" class="space-y-6">
+            <!-- Favorites will be loaded here by JavaScript -->
+        </section>
+
+        <!-- Empty State -->
+        <section id="empty-state" class="text-center py-12">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Belum Ada Favorit</h3>
+                <p class="text-gray-600 mb-6">
+                    Simpan hadith favorit Anda untuk akses cepat nanti.
+                </p>
+                <a href="/" class="inline-block px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition">
+                    Jelajahi Hadith
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Sunnah.com - Kumpulan Hadits Nabi Muhammad ﷺ</p>
+            <p class="text-gray-400">© 2026 - Dibuat dengan ❤️ untuk pembelajaran Islam</p>
+        </div>
+    </footer>
+
+    <script src="/static/script.js"></script>
+    <script src="/static/favorites.js"></script>
+    <script>
+        function loadFavorites() {
+            const favorites = favoritesManager.getFavorites();
+            const container = document.getElementById('favorites-container');
+            const emptyState = document.getElementById('empty-state');
+            const countElement = document.getElementById('favorites-count');
+            
+            countElement.textContent = favorites.length;
+            
+            if (favorites.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            container.style.display = 'block';
+            emptyState.style.display = 'none';
+            
+            container.innerHTML = favorites.map(fav => {
+                if (!fav.data) return '';
+                
+                const hadithKey = fav.key;
+                const hadith = fav.data;
+                
+                return `
+                    <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-700">${hadith.collectionName} - Hadith ${hadith.number}</h3>
+                                    <p class="text-sm text-gray-500">Ditambahkan: ${new Date(hadith.savedAt).toLocaleDateString('id-ID')}</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="favoritesManager.toggleFavorite('${hadithKey}')" 
+                                            class="favorite-btn text-red-600 hover:text-red-700 transition"
+                                            data-hadith-key="${hadithKey}">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path>
+                                        </svg>
+                                    </button>
+                                    ${hadith.url ? `<a href="${hadith.url}" class="text-emerald-600 hover:text-emerald-800">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                    </a>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="arabic-text text-right text-gray-800 leading-loose">
+                                    ${hadith.arab}
+                                </div>
+                                <div class="indonesian-text text-gray-700 text-sm md:text-base">
+                                    <span class="font-medium text-emerald-700">Terjemahan:</span> ${hadith.id}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function exportFavorites() {
+            favoritesManager.exportFavorites();
+        }
+
+        function importFavorites(file) {
+            if (!file) return;
+            favoritesManager.importFavorites(file);
+            setTimeout(loadFavorites, 500);
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                window.location.href = '/search?q=' + encodeURIComponent(query);
+            }
+        }
+
+        // Load favorites when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFavorites();
+            
+            // Listen for storage changes
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'hadith_favorites') {
+                    loadFavorites();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
