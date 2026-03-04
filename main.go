@@ -64,13 +64,9 @@ type NumberRange struct {
 }
 
 type FilteredResults struct {
-	Query   string
-	Filters SearchFilters
-	Results []struct {
-		Slug    string
-		Info    CollectionInfo
-		Hadiths []SearchResult
-	}
+	Query       string
+	Filters     SearchFilters
+	Results     []SearchResult
 	Pagination  Pagination
 	TotalItems  int
 	Collections []CollectionInfo
@@ -373,63 +369,29 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Calculate pagination
 	totalPages := (totalItems + ItemsPerPage - 1) / ItemsPerPage
-	startIndex := (page - 1) * ItemsPerPage
-	endIndex := startIndex + ItemsPerPage
-
-	if startIndex >= totalItems {
-		startIndex = 0
-		endIndex = ItemsPerPage
+	if page > totalPages && totalPages > 0 {
+		page = totalPages
+	}
+	if page < 1 {
 		page = 1
 	}
 
+	startIndex := (page - 1) * ItemsPerPage
+	endIndex := startIndex + ItemsPerPage
+
+	if startIndex < 0 {
+		startIndex = 0
+	}
+	if startIndex > totalItems {
+		startIndex = totalItems
+	}
 	if endIndex > totalItems {
 		endIndex = totalItems
 	}
 
-	paginatedResults := allResults[startIndex:endIndex]
-
-	// Group results by slug for display
-	type CollectionResults struct {
-		Info    CollectionInfo
-		Hadiths []SearchResult
-	}
-
-	resultsByCollection := make(map[string]*CollectionResults)
-
-	for _, result := range paginatedResults {
-		if resultsByCollection[result.Slug] == nil {
-			var info CollectionInfo
-			for _, collectionInfo := range data.Info {
-				if collectionInfo.Slug == result.Slug {
-					info = collectionInfo
-					break
-				}
-			}
-			resultsByCollection[result.Slug] = &CollectionResults{
-				Info:    info,
-				Hadiths: []SearchResult{result},
-			}
-		} else {
-			resultsByCollection[result.Slug].Hadiths = append(resultsByCollection[result.Slug].Hadiths, result)
-		}
-	}
-
-	// Convert to slice for template
-	var finalResults []struct {
-		Slug    string
-		Info    CollectionInfo
-		Hadiths []SearchResult
-	}
-	for slug, collectionData := range resultsByCollection {
-		finalResults = append(finalResults, struct {
-			Slug    string
-			Info    CollectionInfo
-			Hadiths []SearchResult
-		}{
-			Slug:    slug,
-			Info:    collectionData.Info,
-			Hadiths: collectionData.Hadiths,
-		})
+	var paginatedResults []SearchResult
+	if totalItems > 0 {
+		paginatedResults = allResults[startIndex:endIndex]
 	}
 
 	pagination := Pagination{
@@ -444,7 +406,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	pageData := FilteredResults{
 		Query:       filters.Query,
 		Filters:     filters,
-		Results:     finalResults,
+		Results:     paginatedResults,
 		Pagination:  pagination,
 		TotalItems:  totalItems,
 		Collections: data.Info,
@@ -632,23 +594,23 @@ func matchesFilter(hadith Collection, slug string, filters SearchFilters) bool {
 		}
 	}
 
-	// Language filter
-	if filters.Language != "all" {
-		if filters.Language == "ar" {
-			if !strings.Contains(strings.ToLower(hadith.Arab), filters.Query) {
-				return false
-			}
-		} else if filters.Language == "id" {
-			if !strings.Contains(strings.ToLower(hadith.ID), filters.Query) {
-				return false
-			}
-		} else {
-			// For "all" language, check both
-			if !strings.Contains(strings.ToLower(hadith.ID), filters.Query) &&
-				!strings.Contains(strings.ToLower(hadith.Arab), filters.Query) {
-				return false
-			}
-		}
+	// Query match check
+	queryMatched := false
+	lowerArab := strings.ToLower(hadith.Arab)
+	lowerID := strings.ToLower(hadith.ID)
+	lowerQuery := strings.ToLower(filters.Query)
+
+	if filters.Language == "ar" {
+		queryMatched = strings.Contains(lowerArab, lowerQuery)
+	} else if filters.Language == "id" {
+		queryMatched = strings.Contains(lowerID, lowerQuery)
+	} else {
+		// Default "all" or anything else: check both
+		queryMatched = strings.Contains(lowerArab, lowerQuery) || strings.Contains(lowerID, lowerQuery)
+	}
+
+	if !queryMatched {
+		return false
 	}
 
 	// Number range filter
@@ -705,6 +667,15 @@ func performAdvancedSearch(filters SearchFilters) []SearchResult {
 			}
 		}
 
+		// Get collection name
+		collectionName := slug
+		for _, info := range data.Info {
+			if info.Slug == slug {
+				collectionName = info.Name
+				break
+			}
+		}
+
 		for _, hadith := range collection {
 			if matchesFilter(hadith, slug, filters) {
 				// Calculate relevance score
@@ -712,12 +683,12 @@ func performAdvancedSearch(filters SearchFilters) []SearchResult {
 
 				// Get context around match
 				context := hadith.ID
-				if len(context) > 200 {
-					context = context[:200] + "..."
+				if len(context) > 300 {
+					context = context[:300] + "..."
 				}
 
 				allResults = append(allResults, SearchResult{
-					Collection: "",
+					Collection: collectionName,
 					Slug:       slug,
 					Hadith:     hadith,
 					Context:    context,
