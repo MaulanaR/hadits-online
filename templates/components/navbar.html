@@ -1,20 +1,63 @@
-<!-- Header/Navigation Component -->
-<nav class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-6">
-    <a href="/" class="hover:text-emerald-200 transition">Beranda</a>
-    <a href="/favorites" class="hover:text-emerald-200 transition flex items-center">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-        </svg>
-        Favorit
-    </a>
-    <a href="#collections" class="hover:text-emerald-200 transition">Koleksi</a>
-    <div class="relative">
-        <input type="text" id="searchInput" placeholder="Cari hadith..." 
-               class="px-4 py-2 rounded-lg text-gray-800 bg-white w-full md:w-64">
-        <button onclick="performSearch()" class="absolute right-2 top-2 text-emerald-600">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-        </button>
+{{define "navbar"}}
+<header class="bg-emerald-700 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-xl lg:text-3xl font-bold">Hadits.online</h1>
+            
+            <!-- Mobile menu button -->
+            <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-md hover:bg-emerald-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobileMenu" class="hidden lg:hidden mt-4 pb-4 border-t border-emerald-600 pt-4">
+            <nav class="flex flex-col space-y-3">
+                <a href="/" class="hover:text-emerald-200 transition py-2">Beranda</a>
+                <a href="/favorites" class="hover:text-emerald-200 transition py-2">Favorit</a>
+                <a href="/#collections" class="hover:text-emerald-200 transition py-2">Koleksi</a>
+                <a href="/faq" class="hover:text-emerald-200 transition py-2">FAQ</a>
+                <a href="/donate" class="hover:text-emerald-200 transition py-2">Donasi</a>
+                <div class="relative pt-2">
+                    <input type="text" id="searchInput" placeholder="Cari hadith..." 
+                        class="px-4 py-2 rounded-lg text-gray-800 bg-white w-full">
+                    <button onclick="performSearch()" class="absolute right-2 top-2.5 text-emerald-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- Desktop menu -->
+        <div class="hidden lg:block mt-4">
+            <nav class="flex items-center justify-center space-x-6">
+                <a href="/" class="hover:text-emerald-200 transition">Beranda</a>
+                <a href="/favorites" class="hover:text-emerald-200 transition">Favorit</a>
+                <a href="/#collections" class="hover:text-emerald-200 transition">Koleksi</a>
+                <a href="/faq" class="hover:text-emerald-200 transition">FAQ</a>
+                <a href="/donate" class="hover:text-emerald-200 transition">Donasi</a>
+                <div class="relative">
+                    <input type="text" id="searchInputDkstp" placeholder="Cari hadith..." 
+                        class="px-4 py-2 rounded-lg text-gray-800 bg-white w-64">
+                    <button onclick="performSearchDekstop()" class="absolute right-2 top-2 text-emerald-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+        </div>
     </div>
-</nav>
+    
+    <script>
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        });
+    </script>
+</header>
+{{end}}

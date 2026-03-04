@@ -25,20 +25,27 @@ function performSearch() {
     }
 }
 
+function performSearchDekstop() {
+    const query = document.getElementById('searchInputDkstp').value.trim();
+    if (query) {
+        window.location.href = '/search?q=' + encodeURIComponent(query);
+    }
+}
+
 // Text copying with feedback
 function copyToClipboard(text, button) {
-    navigator.clipboard.writeText(text).then(function() {
+    navigator.clipboard.writeText(text).then(function () {
         const originalText = button.innerHTML;
         button.innerHTML = '✓ Tersalin!';
         button.classList.add('bg-green-600', 'hover:bg-green-700');
         button.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-        
-        setTimeout(function() {
+
+        setTimeout(function () {
             button.innerHTML = originalText;
             button.classList.remove('bg-green-600', 'hover:bg-green-700');
             button.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
         }, 2000);
-    }).catch(function(err) {
+    }).catch(function (err) {
         console.error('Failed to copy: ', err);
         alert('Gagal menyalin teks. Silakan coba lagi.');
     });
@@ -64,15 +71,15 @@ async function shareHadith(title, text, url) {
 }
 
 function copyShareLink(url) {
-    navigator.clipboard.writeText(url).then(function() {
+    navigator.clipboard.writeText(url).then(function () {
         alert('Link hadith berhasil disalin!');
-    }).catch(function(err) {
+    }).catch(function (err) {
         prompt('Salin link ini:', url);
     });
 }
 
 // Keyboard navigation
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     // Ctrl/Cmd + Arrow keys for hadith navigation
     if ((e.ctrlKey || e.metaKey)) {
         if (e.key === 'ArrowLeft') {
@@ -86,9 +93,9 @@ document.addEventListener('keydown', function(e) {
                 const allLinks = document.querySelectorAll('a[href*="/collection/"][href*="/"]');
                 if (allLinks.length > 1) {
                     // Find the "next" link (second one in this case)
-                    const nextButton = Array.from(allLinks).find(link => 
-                        link.textContent.includes('Hadith') && 
-                        link.href.includes('>') || 
+                    const nextButton = Array.from(allLinks).find(link =>
+                        link.textContent.includes('Hadith') &&
+                        link.href.includes('>') ||
                         link.href.includes('Selanjutnya')
                     );
                     if (nextButton) {
@@ -98,7 +105,7 @@ document.addEventListener('keydown', function(e) {
             }
         }
     }
-    
+
     // Focus search with / key
     if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
         const searchInput = document.getElementById('searchInput');
@@ -126,10 +133,10 @@ function hideLoading(element) {
 // Search highlighting
 function highlightSearchResults(searchTerm) {
     if (!searchTerm) return;
-    
+
     const elements = document.querySelectorAll('.searchable-content');
     const regex = new RegExp(`(${searchTerm})`, 'gi');
-    
+
     elements.forEach(element => {
         const originalText = element.textContent;
         const highlightedText = originalText.replace(regex, '<mark class="search-highlight">$1</mark>');
@@ -147,34 +154,34 @@ function getSearchPreference(key, defaultValue = '') {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Apply saved theme
     applyTheme();
-    
+
     // Add search enter key handler
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
+        searchInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 performSearch();
             }
         });
-        
+
         // Auto-save search query
-        searchInput.addEventListener('input', function() {
+        searchInput.addEventListener('input', function () {
             saveSearchPreference('lastQuery', this.value);
         });
-        
+
         // Restore last search query
         const lastQuery = getSearchPreference('lastQuery');
         if (lastQuery && !searchInput.value) {
             searchInput.placeholder = `Cari: "${lastQuery}"`;
         }
     }
-    
+
     // Add smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
+        anchor.addEventListener('click', function (e) {
             e.preventDefault();
             const target = document.querySelector(this.getAttribute('href'));
             if (target) {
@@ -202,7 +209,7 @@ function debounce(func, wait) {
 
 function throttle(func, limit) {
     let inThrottle;
-    return function() {
+    return function () {
         const args = arguments;
         const context = this;
         if (!inThrottle) {

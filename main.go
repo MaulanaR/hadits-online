@@ -77,6 +77,7 @@ type FilteredResults struct {
 }
 
 var data *HadithData
+var tmpl *template.Template
 
 const (
 	ItemsPerPage = 20
@@ -157,7 +158,7 @@ func pageNumbers(current, total int) []int {
 }
 
 func favoritesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/favorites.html"))
+	tmpl := template.Must(template.ParseFiles("templates/favorites.html", "templates/components/navbar.html"))
 	if err := tmpl.Execute(w, nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -173,7 +174,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}
 
-	tmpl := template.Must(template.New("index.html").Funcs(funcMap).ParseFiles("templates/index.html"))
+	tmpl := template.Must(template.New("index.html").Funcs(funcMap).ParseFiles("templates/index.html", "templates/components/navbar.html"))
 	if err := tmpl.Execute(w, data.Info); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -262,7 +263,7 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}
 
-	tmpl := template.Must(template.New("collection.html").Funcs(funcMap).ParseFiles("templates/collection.html"))
+	tmpl := template.Must(template.New("collection.html").Funcs(funcMap).ParseFiles("templates/collection.html", "templates/components/navbar.html"))
 	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -342,7 +343,7 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}
 
-	tmpl := template.Must(template.New("hadith.html").Funcs(funcMap).ParseFiles("templates/hadith.html"))
+	tmpl := template.Must(template.New("hadith.html").Funcs(funcMap).ParseFiles("templates/hadith.html", "templates/components/navbar.html"))
 	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -502,7 +503,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	tmpl := template.Must(template.New("search.html").Funcs(funcMap).ParseFiles("templates/search.html"))
+	tmpl := template.Must(template.New("search.html").Funcs(funcMap).ParseFiles("templates/search.html", "templates/components/navbar.html"))
 	if err := tmpl.Execute(w, pageData); err != nil {
 		log.Printf("Template execution error in searchHandler: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -757,6 +758,8 @@ func main() {
 	r.HandleFunc("/collection/{slug}", collectionHandler)
 	r.HandleFunc("/collection/{slug}/{number}", hadithHandler)
 	r.HandleFunc("/search", searchHandler)
+	r.HandleFunc("/donate", donateHandler)
+	r.HandleFunc("/faq", faqHandler)
 
 	// Serve static files
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
@@ -767,7 +770,7 @@ func main() {
 	// Add 404 handler
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		tmpl := template.Must(template.ParseFiles("templates/404.html"))
+		tmpl := template.Must(template.ParseFiles("templates/404.html", "templates/components/navbar.html"))
 		tmpl.Execute(w, struct {
 			Path string
 		}{Path: r.URL.Path})
@@ -781,13 +784,13 @@ func main() {
 // Donation page handler
 func donateHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.New("donate.html").Funcs(template.FuncMap{
-		"add":       add,
-		"add1":      add1,
-		"subtract":  subtract,
-		"multiply":  multiply,
+		"add":         add,
+		"add1":        add1,
+		"subtract":    subtract,
+		"multiply":    multiply,
 		"pageNumbers": pageNumbers,
-	}).ParseFiles("templates/donate.html"))
-	
+	}).ParseFiles("templates/donate.html", "templates/components/navbar.html"))
+
 	if err := tmpl.Execute(w, nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -796,13 +799,13 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 // FAQ page handler
 func faqHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.New("faq.html").Funcs(template.FuncMap{
-		"add":       add,
-		"add1":      add1,
-		"subtract":  subtract,
-		"multiply":  multiply,
+		"add":         add,
+		"add1":        add1,
+		"subtract":    subtract,
+		"multiply":    multiply,
 		"pageNumbers": pageNumbers,
-	}).ParseFiles("templates/faq.html"))
-	
+	}).ParseFiles("templates/faq.html", "templates/components/navbar.html"))
+
 	if err := tmpl.Execute(w, nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunnah.com - Kumpulan Hadits</title>
+    <title>hadits.online - Kumpulan Hadits</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,22 +23,7 @@
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
-    <header class="bg-emerald-700 text-white shadow-lg">
-        <div class="container mx-auto px-4 py-6">
-            <div class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
-                <div class="order-2 lg:order-1 text-center lg:text-left">
-                    <h1 class="text-3xl lg:text-4xl font-bold mb-4 lg:mb-6">Sunnah.com</h1>
-                    <div class="lg:hidden">
-                        <span class="mx-3">/</span>
-                        <span class="text-xl">Beranda</span>
-                    </div>
-                </div>
-                <div class="order-1 lg:order-2">
-                    {{template "components/navbar.html" .}}
-                </div>
-            </div>
-        </div>
-    </header>
+    {{template "navbar" .}}
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
@@ -86,7 +71,7 @@
     <!-- Footer -->
     <footer class="bg-gray-800 text-white py-8">
         <div class="container mx-auto px-4 text-center">
-            <p class="mb-2">Sunnah.com - Kumpulan Hadits Nabi Muhammad ﷺ</p>
+            <p class="mb-2">hadits.online - Kumpulan Hadits Nabi Muhammad ﷺ</p>
             <p class="text-gray-400">© 2026 - Dibuat dengan ❤️ untuk pembelajaran Islam</p>
         </div>
     </footer>

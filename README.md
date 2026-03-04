@@ -1,6 +1,6 @@
-# Hadits Online - Sunnah.com Clone (Enhanced with Advanced Filtering)
+# Hadits Online - Hadits.online Clone (Enhanced with Advanced Filtering)
 
-A comprehensive web application that clones and enhances Sunnah.com functionality, providing access to hadith collections from various Islamic books. Built with Go and TailwindCSS with modern features, excellent user experience, and **advanced filtering capabilities**.
+A comprehensive web application that clones and enhances Hadits.online functionality, providing access to hadith collections from various Islamic books. Built with Go and TailwindCSS with modern features, excellent user experience, and **advanced filtering capabilities**.
 
 ## 🚀 Enhanced Features
 
@@ -586,7 +586,7 @@ http://localhost:8080/search?q=iman&lang=all&collections=bukhari&min=1&max=10&so
 
 ## 🎉 **Project Summary**
 
-This is now a **production-ready, feature-rich hadith search application** that significantly exceeds the original Sunnah.com functionality with:
+This is now a **production-ready, feature-rich hadith search application** that significantly exceeds the original Hadits.online functionality with:
 
 ### 🏆 **Key Achievements:**
 1. **Advanced Filtering Engine**: Most comprehensive hadith filtering system available

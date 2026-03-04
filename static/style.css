@@ -10,6 +10,31 @@ html {
     transition: all 0.3s ease;
 }
 
+/* Glassmorphism utility */
+.glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-emerald {
+    background: rgba(5, 150, 105, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
 /* Arabic text enhancements */
 .arabic-text {
     font-family: 'Amiri Quran', 'Traditional Arabic', serif;
@@ -54,8 +79,13 @@ html {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Search highlight */
@@ -103,11 +133,11 @@ html {
     .no-print {
         display: none !important;
     }
-    
+
     .arabic-text {
         font-size: 1.25rem !important;
     }
-    
+
     body {
         font-size: 12pt;
     }
@@ -118,7 +148,7 @@ html {
     .arabic-text {
         font-size: 1.25rem;
     }
-    
+
     .container {
         padding-left: 1rem;
         padding-right: 1rem;
