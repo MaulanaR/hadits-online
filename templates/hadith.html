@@ -7,17 +7,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&family=Lateef&family=Scheherazade+New&family=Roboto:wght@300;400;700&family=Noto+Naskh+Arabic&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <style>
+        :root {
+            --arabic-size: 1.5rem;
+            --id-size: 1rem;
+            --arabic-font: 'Amiri Quran';
+            --id-font: 'Inter';
+        }
         .arabic-text {
-            font-family: 'Amiri Quran', serif;
+            font-family: var(--arabic-font), serif;
             line-height: 2.5;
-            font-size: 1.5rem;
+            font-size: var(--arabic-size);
         }
         .indonesian-text {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--id-font), sans-serif;
             line-height: 1.8;
+            font-size: var(--id-size);
+        }
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 5rem;
+            right: 1rem;
+            z-index: 50;
+            width: 280px;
+        }
+        .settings-panel.active {
+            display: block;
         }
     </style>
 </head>
@@ -31,16 +49,86 @@
     <main class="container mx-auto px-4 py-8">
         <!-- Hadith Content -->
         <section class="bg-white rounded-lg shadow-lg p-8">
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-800 mb-2">
-                    {{.Info.Name}} - Hadith {{.Hadith.Number}}
-                </h1>
-                <div class="flex space-x-4 text-sm text-gray-600">
-                    <span>Total hadits: {{.Info.Total}}</span>
-                    <span>•</span>
-                    <a href="/collection/{{$.Info.Slug}}" class="text-emerald-600 hover:text-emerald-800">
-                        Kembali ke koleksi
-                    </a>
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">
+                        {{.Info.Name}} - Hadith {{.Hadith.Number}}
+                    </h1>
+                    <div class="flex space-x-4 text-sm text-gray-600">
+                        <span>Total hadits: {{.Info.Total}}</span>
+                        <span>•</span>
+                        <a href="/collection/{{$.Info.Slug}}" class="text-emerald-600 hover:text-emerald-800">
+                            Kembali ke koleksi
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Appearance Settings Button -->
+                <button onclick="toggleSettings()" class="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition no-print">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Pengaturan Teks</span>
+                </button>
+            </div>
+
+            <!-- Settings Panel -->
+            <div id="settingsPanel" class="settings-panel bg-white rounded-xl shadow-2xl border border-gray-200 p-5 no-print">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-gray-800">Tampilan Teks</h3>
+                    <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Arabic Size -->
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-semibold text-gray-500 uppercase">Ukuran Arab</label>
+                            <span id="arabicSizeLabel" class="text-xs font-bold text-emerald-600">1.5rem</span>
+                        </div>
+                        <input type="range" min="1" max="3" step="0.1" value="1.5" id="arabicSizeRange" 
+                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                    </div>
+
+                    <!-- Indo Size -->
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-semibold text-gray-500 uppercase">Ukuran Terjemah</label>
+                            <span id="idSizeLabel" class="text-xs font-bold text-blue-600">1rem</span>
+                        </div>
+                        <input type="range" min="0.8" max="2" step="0.1" value="1" id="idSizeRange" 
+                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                    </div>
+
+                    <!-- Arabic Font -->
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 uppercase block mb-2">Font Arab</label>
+                        <select id="arabicFontSelect" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                            <option value="'Amiri Quran'">Amiri Quran</option>
+                            <option value="'Scheherazade New'">Scheherazade New</option>
+                            <option value="'Lateef'">Lateef</option>
+                            <option value="'Noto Naskh Arabic'">Noto Naskh</option>
+                        </select>
+                    </div>
+
+                    <!-- Indo Font -->
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 uppercase block mb-2">Font Terjemah</label>
+                        <select id="idFontSelect" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="'Inter'">Inter</option>
+                            <option value="'Roboto'">Roboto</option>
+                            <option value="system-ui">System Default</option>
+                            <option value="serif">Serif</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="resetSettings()" class="w-full py-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition">
+                        Reset Pengaturan
+                    </button>
                 </div>
             </div>
 
@@ -154,7 +242,75 @@
             }
         }
 
+        // Settings management
+        function toggleSettings() {
+            document.getElementById('settingsPanel').classList.toggle('active');
+        }
+
+        function updateAppearance(key, value) {
+            const root = document.documentElement;
+            if (key === 'arabicSize') {
+                root.style.setProperty('--arabic-size', value + 'rem');
+                document.getElementById('arabicSizeLabel').textContent = value + 'rem';
+            } else if (key === 'idSize') {
+                root.style.setProperty('--id-size', value + 'rem');
+                document.getElementById('idSizeLabel').textContent = value + 'rem';
+            } else if (key === 'arabicFont') {
+                root.style.setProperty('--arabic-font', value);
+            } else if (key === 'idFont') {
+                root.style.setProperty('--id-font', value);
+            }
+            localStorage.setItem('appearance_' + key, value);
+        }
+
+        function resetSettings() {
+            const defaults = {
+                arabicSize: '1.5',
+                idSize: '1',
+                arabicFont: "'Amiri Quran'",
+                idFont: "'Inter'"
+            };
+            
+            Object.keys(defaults).forEach(key => {
+                updateAppearance(key, defaults[key]);
+                const elId = key.includes('Font') ? key + 'Select' : key + 'Range';
+                const el = document.getElementById(elId);
+                if (el) el.value = defaults[key];
+            });
+        }
+
+        // Initialize settings
         document.addEventListener('DOMContentLoaded', function() {
+            const settingsConfig = [
+                { id: 'arabicSizeRange', key: 'arabicSize', event: 'input' },
+                { id: 'idSizeRange', key: 'idSize', event: 'input' },
+                { id: 'arabicFontSelect', key: 'arabicFont', event: 'change' },
+                { id: 'idFontSelect', key: 'idFont', event: 'change' }
+            ];
+
+            settingsConfig.forEach(s => {
+                const el = document.getElementById(s.id);
+                const savedValue = localStorage.getItem('appearance_' + s.key);
+                
+                if (savedValue) {
+                    updateAppearance(s.key, savedValue);
+                    el.value = savedValue;
+                }
+
+                el.addEventListener(s.event, (e) => {
+                    updateAppearance(s.key, e.target.value);
+                });
+            });
+
+            // Close settings when clicking outside
+            document.addEventListener('click', function(e) {
+                const panel = document.getElementById('settingsPanel');
+                const btn = e.target.closest('button');
+                if (panel.classList.contains('active') && !panel.contains(e.target) && (!btn || !btn.onclick || !btn.onclick.toString().includes('toggleSettings'))) {
+                    panel.classList.remove('active');
+                }
+            });
+
             // Update favorite button state
             const btn = document.getElementById('favorite-btn');
             if (btn && favoritesManager) {
@@ -197,9 +353,9 @@
             <div class="flex justify-between items-center">
                 {{if .PrevHadith}}
                 <a href="/collection/{{$.Info.Slug}}/{{.PrevHadith.Number}}" 
-                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-medium px-4 py-2">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-medium px-1 py-2">
+                    <svg class="w-5 h-5 mr-2" fill="#059669" version="1.1" id="XMLID_287_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+                        viewBox="0 0 24 24" xml:space="preserve"><g id="previous"><g><polygon points="18.5,23.7 7.2,12 18.5,0.3 19.9,1.7 10.1,12 19.9,22.3 	"/></g></g>
                     </svg>
                     Hadith {{.PrevHadith.Number}}
                 </a>
@@ -211,10 +367,10 @@
                 
                 {{if .NextHadith}}
                 <a href="/collection/{{$.Info.Slug}}/{{.NextHadith.Number}}" 
-                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-medium px-4 py-2">
-                    Hadith {{.NextHadith.Number}}
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7"></path>
+                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-medium px-1 py-2">
+                    Hadith {{.NextHadith.Number}} 
+                    <svg class="w-5 h-5 mr-2" fill="#059669" version="1.1" id="XMLID_287_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+                        viewBox="0 0 24 24" xml:space="preserve"><g id="next"><g><polygon points="6.8,23.7 5.4,22.3 15.7,12 5.4,1.7 6.8,0.3 18.5,12 		"/></g></g>
                     </svg>
                 </a>
                 {{else}}
