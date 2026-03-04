@@ -37,7 +37,7 @@ html {
 
 /* Arabic text enhancements */
 .arabic-text {
-    font-family: 'Amiri Quran', 'Traditional Arabic', serif;
+    font-family: 'Noto Naskh Arabic', 'Amiri Quran', serif;
     line-height: 2.5;
     font-size: 1.5rem;
     text-align: right;
