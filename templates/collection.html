@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .arabic-text {
-            font-family: 'Amiri Quran', serif;
+            font-family: 'Noto Naskh Arabic', serif;
             line-height: 2.5;
             font-size: 1.5rem;
         }
@@ -21,61 +21,62 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
     {{template "navbar" .}}
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Collection Header -->
-        <section class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">{{.Info.Name}}</h1>
-            <p class="text-lg text-gray-600">Total: {{.Info.Total}} hadits</p>
-        </section>
-
-        <!-- Hadiths List -->
-        <section id="hadiths-container" class="space-y-6">
-            {{if .Hadiths}}
-                <!-- Search within Collection -->
-        <section class="mb-8">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                    Cari dalam {{.Info.Name}}
-                </h3>
-                <form onsubmit="searchInCollection(event)" class="flex space-x-2">
+    <!-- Hero Header -->
+    <section class="bg-emerald-900 text-white py-12 md:py-16 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10" 
+             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
+        
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">{{.Info.Name}}</h1>
+            <p class="text-emerald-100/70 text-lg md:text-xl font-light">Total: <span class="text-white font-bold">{{.Info.Total}}</span> Hadits Terpercaya</p>
+            
+            <div class="mt-8 max-w-2xl mx-auto">
+                <form onsubmit="searchInCollection(event)" class="relative group">
                     <input type="text" id="collectionSearch" 
-                           placeholder="Cari hadith dalam koleksi ini..." 
-                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                           placeholder="Cari dalam kitab {{.Info.Name}}..." 
+                           class="w-full px-6 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-emerald-100/50 focus:outline-none focus:bg-white focus:text-gray-900 transition-all shadow-inner backdrop-blur-sm">
                     <button type="submit" 
-                            class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition">
-                        🔍 Cari
+                            class="absolute right-2 top-2 bottom-2 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg">
+                        Cari
                     </button>
                 </form>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Pagination Info -->
-                <div class="bg-white rounded-lg shadow-md p-4 flex flex-wrap justify-between items-center">
-                    <div class="text-gray-600">
-                        Menampilkan hadith {{if gt .Pagination.CurrentPage 1}}{{subtract (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.PerPage | add1}}{{else}}1{{end}} 
-                        hingga {{if lt (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.TotalItems}}{{multiply .Pagination.CurrentPage .Pagination.PerPage}}{{else}}{{.Pagination.TotalItems}}{{end}} 
-                        dari {{.Pagination.TotalItems}} hadith
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-12 flex-grow">
+        <!-- Hadiths List -->
+        <section id="hadiths-container" class="space-y-8">
+            {{if .Hadiths}}
+                <!-- Pagination Info Top -->
+                <div class="bg-white rounded-2xl shadow-sm border border-emerald-50 p-4 md:p-6 flex flex-wrap justify-between items-center gap-4 mb-8">
+                    <div class="text-gray-600 font-medium text-sm">
+                        Menampilkan hadits <span class="text-emerald-600">{{if gt .Pagination.CurrentPage 1}}{{subtract (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.PerPage | add1}}{{else}}1{{end}}</span> 
+                        - <span class="text-emerald-600">{{if lt (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.TotalItems}}{{multiply .Pagination.CurrentPage .Pagination.PerPage}}{{else}}{{.Pagination.TotalItems}}{{end}}</span> 
+                        dari <span class="text-emerald-600">{{.Pagination.TotalItems}}</span> hadits
                     </div>
-                    <div class="flex space-x-2 mt-2 md:mt-0">
+                    
+                    <div class="flex items-center space-x-1">
                         {{if .Pagination.HasPrev}}
                             <a href="?page={{subtract .Pagination.CurrentPage 1}}" 
-                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                ← Sebelumnya
+                               class="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-emerald-600 hover:text-white transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                             </a>
                         {{end}}
                         
-                        <!-- Page Numbers -->
                         {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
                             {{if eq $i $.Pagination.CurrentPage}}
-                                <span class="px-3 py-1 bg-emerald-600 text-white rounded">{{$i}}</span>
+                                <span class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-md">{{$i}}</span>
                             {{else}}
                                 <a href="?page={{$i}}" 
-                                   class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+                                   class="px-4 py-2 text-gray-600 font-medium rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition"
                                    onclick="loadPage({{$i}}); return false;">
                                     {{$i}}
                                 </a>
@@ -84,83 +85,95 @@
                         
                         {{if .Pagination.HasNext}}
                             <a href="?page={{add .Pagination.CurrentPage 1}}" 
-                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                Selanjutnya →
+                               class="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-emerald-600 hover:text-white transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                             </a>
                         {{end}}
                     </div>
                 </div>
 
-                <!-- Hadiths -->
+                <!-- Hadiths Cards -->
+                <div class="grid grid-cols-1 gap-6 md:gap-10">
                 {{range .Hadiths}}
-                <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300">
-                    <div class="p-6">
-                        <div class="flex items-start justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-700">Hadith {{.Number}}</h3>
+                <div class="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all border border-gray-100 overflow-hidden group">
+                    <div class="p-6 md:p-10">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                    {{.Number}}
+                                </div>
+                                <h3 class="text-xl font-black text-gray-800 tracking-tight">Hadits Ke-{{.Number}}</h3>
+                            </div>
                             <a href="/collection/{{$.Collection}}/{{.Number}}" 
-                               class="text-emerald-600 hover:text-emerald-800 font-medium text-sm">
-                                Lihat Detail →
+                               class="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl font-bold text-sm transition-all">
+                                Detail 
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
                             </a>
                         </div>
                         
-                        <div class="space-y-4">
-                            <div class="arabic-text text-right text-gray-800 leading-loose">
+                        <div class="space-y-8">
+                            <div class="arabic-text text-right text-gray-800 leading-loose text-2xl md:text-3xl font-amiri">
                                 {{.Arab}}
                             </div>
-                            <div class="indonesian-text text-gray-700 text-sm md:text-base">
-                                <span class="font-medium text-emerald-700">Terjemahan:</span> {{.ID}}
+                            <div class="indonesian-text text-gray-600 text-base md:text-lg leading-relaxed border-l-4 border-emerald-100 pl-6 py-2 italic">
+                                <span class="font-bold text-emerald-700 not-italic uppercase text-xs tracking-widest block mb-2">Terjemahan:</span>
+                                {{.ID}}
                             </div>
                         </div>
                     </div>
                 </div>
                 {{end}}
+                </div>
 
                 <!-- Bottom Pagination -->
                 {{if gt .Pagination.TotalPages 1}}
-                <div class="bg-white rounded-lg shadow-md p-4 flex justify-center">
-                    <div class="flex space-x-2">
+                <div class="bg-white rounded-2xl shadow-lg p-6 flex justify-center mt-12 border border-emerald-50">
+                    <div class="flex items-center space-x-2">
                         {{if .Pagination.HasPrev}}
                             <a href="?page={{subtract .Pagination.CurrentPage 1}}" 
-                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                ← Sebelumnya
+                               class="px-5 py-3 bg-gray-50 text-gray-600 rounded-xl hover:bg-emerald-600 hover:text-white font-bold transition">
+                                Sebelumnya
                             </a>
                         {{end}}
                         
+                        <div class="hidden md:flex items-center space-x-1">
                         {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
                             {{if eq $i $.Pagination.CurrentPage}}
-                                <span class="px-3 py-1 bg-emerald-600 text-white rounded">{{$i}}</span>
+                                <span class="px-5 py-3 bg-emerald-600 text-white font-black rounded-xl shadow-md">{{$i}}</span>
                             {{else}}
                                 <a href="?page={{$i}}" 
-                                   class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                                   class="px-5 py-3 text-gray-600 font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition">
                                     {{$i}}
                                 </a>
                             {{end}}
                         {{end}}
+                        </div>
+                        
+                        <span class="md:hidden font-bold text-gray-500">{{.Pagination.CurrentPage}} / {{.Pagination.TotalPages}}</span>
                         
                         {{if .Pagination.HasNext}}
                             <a href="?page={{add .Pagination.CurrentPage 1}}" 
-                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                Selanjutnya →
+                               class="px-5 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 font-black shadow-lg transition">
+                                Selanjutnya
                             </a>
                         {{end}}
                     </div>
                 </div>
                 {{end}}
             {{else}}
-                <div class="bg-white rounded-lg shadow-md p-8 text-center">
-                    <p class="text-gray-600">Tidak ada hadith yang ditemukan.</p>
+                <div class="bg-white rounded-[2rem] shadow-xl p-20 text-center border border-dashed border-emerald-200">
+                    <div class="w-20 h-20 bg-emerald-50 text-emerald-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-800 mb-2">Kosong</h3>
+                    <p class="text-gray-500">Tidak ada hadits yang ditemukan dalam koleksi ini.</p>
                 </div>
             {{end}}
         </section>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8">
-        <div class="container mx-auto px-4 text-center">
-            <p class="mb-2">hadits.online - Kumpulan Hadits Nabi Muhammad ﷺ</p>
-            <p class="text-gray-400">© 2026 - Dibuat dengan ❤️ untuk pembelajaran Islam</p>
-        </div>
-    </footer>
+    {{template "footer" .}}
 
     <script src="/static/script.js"></script>
     <script>

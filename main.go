@@ -154,7 +154,7 @@ func pageNumbers(current, total int) []int {
 }
 
 func favoritesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/favorites.html", "templates/components/navbar.html"))
+	tmpl := template.Must(template.ParseFiles("templates/favorites.html", "templates/components/navbar.html", "templates/components/footer.html"))
 	if err := tmpl.Execute(w, nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -170,7 +170,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}
 
-	tmpl := template.Must(template.New("index.html").Funcs(funcMap).ParseFiles("templates/index.html", "templates/components/navbar.html"))
+	tmpl := template.Must(template.New("index.html").Funcs(funcMap).ParseFiles("templates/index.html", "templates/components/navbar.html", "templates/components/footer.html"))
 	if err := tmpl.Execute(w, data.Info); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -259,7 +259,7 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}
 
-	tmpl := template.Must(template.New("collection.html").Funcs(funcMap).ParseFiles("templates/collection.html", "templates/components/navbar.html"))
+	tmpl := template.Must(template.New("collection.html").Funcs(funcMap).ParseFiles("templates/collection.html", "templates/components/navbar.html", "templates/components/footer.html"))
 	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -339,7 +339,7 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}
 
-	tmpl := template.Must(template.New("hadith.html").Funcs(funcMap).ParseFiles("templates/hadith.html", "templates/components/navbar.html"))
+	tmpl := template.Must(template.New("hadith.html").Funcs(funcMap).ParseFiles("templates/hadith.html", "templates/components/navbar.html", "templates/components/footer.html"))
 	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
@@ -465,7 +465,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	tmpl := template.Must(template.New("search.html").Funcs(funcMap).ParseFiles("templates/search.html", "templates/components/navbar.html"))
+	tmpl := template.Must(template.New("search.html").Funcs(funcMap).ParseFiles("templates/search.html", "templates/components/navbar.html", "templates/components/footer.html"))
 	if err := tmpl.Execute(w, pageData); err != nil {
 		log.Printf("Template execution error in searchHandler: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -741,7 +741,7 @@ func main() {
 	// Add 404 handler
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		tmpl := template.Must(template.ParseFiles("templates/404.html", "templates/components/navbar.html"))
+		tmpl := template.Must(template.ParseFiles("templates/404.html", "templates/components/navbar.html", "templates/components/footer.html"))
 		tmpl.Execute(w, struct {
 			Path string
 		}{Path: r.URL.Path})
@@ -760,7 +760,7 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 		"subtract":    subtract,
 		"multiply":    multiply,
 		"pageNumbers": pageNumbers,
-	}).ParseFiles("templates/donate.html", "templates/components/navbar.html"))
+	}).ParseFiles("templates/donate.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
 	if err := tmpl.Execute(w, nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
@@ -775,7 +775,7 @@ func faqHandler(w http.ResponseWriter, r *http.Request) {
 		"subtract":    subtract,
 		"multiply":    multiply,
 		"pageNumbers": pageNumbers,
-	}).ParseFiles("templates/faq.html", "templates/components/navbar.html"))
+	}).ParseFiles("templates/faq.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
 	if err := tmpl.Execute(w, nil); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)

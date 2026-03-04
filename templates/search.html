@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .arabic-text {
-            font-family: 'Amiri Quran', serif;
+            font-family: 'Noto Naskh Arabic', serif;
             line-height: 2.5;
             font-size: 1.25rem;
         }
@@ -30,33 +30,56 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
     {{template "navbar" .}}
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Search Filters -->
-        <section class="mb-8">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Filter Pencarian</h3>
-                
-                <form id="filterForm" class="space-y-6">
-                    <!-- Current Query -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Kata Kunci:</label>
-                        <input type="text" name="q" value="{{.Query}}" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500"
-                               placeholder="Masukkan kata kunci pencarian...">
-                    </div>
+    <!-- Hero Header -->
+    <section class="bg-emerald-900 text-white py-12 md:py-16 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10" 
+             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
+        
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Hasil Pencarian</h1>
+            <p class="text-emerald-100/70 text-lg md:text-xl font-light">
+                Menampilkan hasil untuk: <span class="text-white font-bold">"{{.Query}}"</span>
+                {{if .Results}}
+                <span class="ml-2 text-emerald-400 font-bold">({{.Pagination.TotalItems}} hasil)</span>
+                {{end}}
+            </p>
+        </div>
+    </section>
 
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <!-- Language Filter -->
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-12 flex-grow">
+        <!-- Search Filters -->
+        <section class="mb-12 -mt-20 relative z-20">
+            <div class="bg-white rounded-[2rem] shadow-2xl p-6 md:p-10 border border-emerald-50">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-800 tracking-tight">Filter Pencarian</h3>
+                </div>
+                
+                <form id="filterForm" class="space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Query -->
+                        <div class="lg:col-span-2">
+                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Kata Kunci</label>
+                            <input type="text" name="q" value="{{.Query}}" 
+                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800"
+                                   placeholder="Masukkan kata kunci...">
+                        </div>
+
+                        <!-- Language -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Bahasa:</label>
+                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Bahasa</label>
                             <select name="lang" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
-                                <option value="all" {{if eq .Filters.Language "all"}}selected{{end}}>Semua</option>
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800 font-medium">
+                                <option value="all" {{if eq .Filters.Language "all"}}selected{{end}}>Semua Bahasa</option>
                                 <option value="ar" {{if eq .Filters.Language "ar"}}selected{{end}}>Arab</option>
                                 <option value="id" {{if eq .Filters.Language "id"}}selected{{end}}>Indonesia</option>
                             </select>
@@ -64,124 +87,82 @@
 
                         <!-- Sort By -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Urutkan:</label>
+                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Urutkan</label>
                             <select name="sort" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
-                                <option value="relevance" {{if eq .Filters.SortBy "relevance"}}selected{{end}}>Relevansi</option>
-                                <option value="number" {{if eq .Filters.SortBy "number"}}selected{{end}}>Nomor Hadith</option>
-                                <option value="collection" {{if eq .Filters.SortBy "collection"}}selected{{end}}>Koleksi</option>
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800 font-medium">
+                                <option value="relevance" {{if eq .Filters.SortBy "relevance"}}selected{{end}}>Paling Relevan</option>
+                                <option value="number" {{if eq .Filters.SortBy "number"}}selected{{end}}>Nomor Hadits</option>
+                                <option value="collection" {{if eq .Filters.SortBy "collection"}}selected{{end}}>Nama Kitab</option>
                             </select>
-                        </div>
-
-                        <!-- Hadith Number Range -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Hadith:</label>
-                            <div class="flex space-x-2">
-                                <input type="number" name="min" value="{{if .Filters.NumberRange.Min}}{{.Filters.NumberRange.Min}}{{end}}" 
-                                       placeholder="Min" min="1"
-                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
-                            <div class="flex space-x-2">
-                                <input type="number" name="max" value="{{if .Filters.NumberRange.Max}}{{.Filters.NumberRange.Max}}{{end}}" 
-                                       placeholder="Max" min="1"
-                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
-                            </div>
                         </div>
                     </div>
 
                     <!-- Collections Filter -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Koleksi:</label>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Batasi Kitab</label>
+                        <div class="flex flex-wrap gap-3">
                             {{range .Collections}}
-                            <div class="flex items-center">
-                                <input type="checkbox" id="col-{{.Slug}}" name="collections" value="{{.Slug}}" 
+                            <label class="relative flex items-center group cursor-pointer">
+                                <input type="checkbox" name="collections" value="{{.Slug}}" 
                                        {{if hasFilter $.Filters.Collections .Slug}}checked{{end}}
-                                       class="filter-checkbox h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded">
-                                <label for="col-{{.Slug}}" 
-                                       class="ml-2 text-sm text-gray-700 cursor-pointer hover:text-emerald-600">
-                                    {{.Name}} ({{.Total}})
-                                </label>
-                            </div>
+                                       class="peer sr-only">
+                                <div class="px-5 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-500 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 peer-checked:shadow-lg transition-all group-hover:bg-gray-100 uppercase tracking-tighter">
+                                    {{.Name}}
+                                </div>
+                            </label>
                             {{end}}
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
-                    <div class="flex space-x-3">
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
                         <button type="submit" 
-                                class="px-6 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition">
-                            🔍 Terapkan Filter
+                                class="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-xl transition-all transform active:scale-95 flex-1 md:flex-none">
+                            Terapkan Filter
                         </button>
                         <button type="button" onclick="clearFilters()" 
-                                class="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition">
-                            🔄 Reset Filter
+                                class="px-10 py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-2xl transition-all flex-1 md:flex-none">
+                            Reset
                         </button>
                     </div>
                 </form>
             </div>
         </section>
 
-        <!-- Search Results Header -->
-        <section class="mb-6">
-            <div class="flex justify-between items-center bg-white rounded-lg shadow-md p-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">Hasil Pencarian</h1>
-                    <p class="text-gray-600">
-                        Menampilkan hasil untuk: <span class="font-semibold">"{{.Query}}"</span>
-                        {{if .Results}}
-                        <span class="ml-2 text-emerald-600 font-medium">
-                            ({{.Pagination.TotalItems}} hasil)
-                        </span>
-                        {{else}}
-                        <span class="ml-2 text-red-600">(Tidak ada hasil)</span>
-                        {{end}}
-                    </p>
-                </div>
-                {{if gt .Pagination.TotalPages 1}}
-                <div class="text-sm text-gray-600">
-                    Halaman {{.Pagination.CurrentPage}} dari {{.Pagination.TotalPages}}
-                </div>
-                {{end}}
-            </div>
-        </section>
-
         {{if .Results}}
         <!-- Search Results -->
-        <section class="space-y-4 mb-8" id="search-results">
+        <section class="space-y-10 mb-12" id="search-results">
             {{range .Results}}
-            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
-                    <div class="flex items-center space-x-3">
-                        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 text-sm font-bold rounded-full">
-                            {{.Collection}}
-                        </span>
-                        <h3 class="text-lg font-bold text-gray-800">Hadits Nomor {{.Hadith.Number}}</h3>
+            <div class="bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all border border-gray-100 overflow-hidden group">
+                <div class="p-8 md:p-10">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                        <div class="flex items-center space-x-4">
+                            <span class="px-4 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase tracking-widest">
+                                {{.Collection}}
+                            </span>
+                            <h3 class="text-2xl font-black text-gray-800 tracking-tight">Hadits Nomor {{.Hadith.Number}}</h3>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            {{if gt .Score 100}}
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-black rounded-full uppercase tracking-tighter shadow-sm border border-yellow-200">Sangat Relevan</span>
+                            {{else if gt .Score 50}}
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-black rounded-full uppercase tracking-tighter shadow-sm border border-blue-200">Relevan</span>
+                            {{end}}
+                            <a href="/collection/{{.Slug}}/{{.Hadith.Number}}" 
+                               class="inline-flex items-center px-5 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-bold text-sm transition-all shadow-lg">
+                                Baca 
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
+                            </a>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        {{if gt .Score 100}}
-                        <span class="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full">Sangat Relevan</span>
-                        {{else if gt .Score 50}}
-                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Relevan</span>
-                        {{end}}
-                        <a href="/collection/{{.Slug}}/{{.Hadith.Number}}" 
-                           class="text-emerald-600 hover:text-emerald-800 text-sm font-medium">
-                            Baca Selengkapnya →
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="space-y-4">
-                    <div class="arabic-text text-right text-gray-800 leading-loose max-h-48 overflow-hidden relative">
-                        {{.Hadith.Arab}}
-                        <div class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent"></div>
-                    </div>
-                    <div class="indonesian-text text-gray-700 text-sm searchable-content">
-                        {{.Context}}
+                    
+                    <div class="space-y-10">
+                        <div class="arabic-text text-right text-gray-800 leading-loose text-2xl md:text-4xl relative max-h-60 overflow-hidden">
+                            {{.Hadith.Arab}}
+                            <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent"></div>
+                        </div>
+                        <div class="indonesian-text text-gray-600 text-base md:text-lg leading-relaxed searchable-content border-l-4 border-emerald-50 pl-8 py-2">
+                            {{.Context}}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -190,83 +171,61 @@
 
         <!-- Pagination -->
         {{if gt .Pagination.TotalPages 1}}
-        <section class="mb-8">
-            <div class="bg-white rounded-lg shadow-md p-4">
-                <div class="flex justify-center">
-                    <div class="flex space-x-2">
-                        {{if .Pagination.HasPrev}}
-                            <a href="{{buildFilterURL $.Query $.Filters 1}}" 
-                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                ← Sebelumnya
-                            </a>
-                        {{end}}
-                        
-                        {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
-                            {{if eq $i $.Pagination.CurrentPage}}
-                                <span class="px-3 py-1 bg-emerald-600 text-white rounded">{{$i}}</span>
-                            {{else}}
-                                <a href="{{buildFilterURL $.Query $.Filters $i}}" 
-                                   class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                    {{$i}}
-                                </a>
-                            {{end}}
-                        {{end}}
-                        
-                        {{if .Pagination.HasNext}}
-                            <a href="{{buildFilterURL $.Query $.Filters (add .Pagination.CurrentPage 1)}}" 
-                               class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                Selanjutnya →
-                            </a>
-                        {{end}}
-                    </div>
-                </div>
+        <section class="flex justify-center mb-16">
+            <div class="inline-flex bg-white rounded-2xl shadow-xl p-2 border border-emerald-50 space-x-1">
+                {{if .Pagination.HasPrev}}
+                    <a href="{{buildFilterURL $.Query $.Filters 1}}" 
+                       class="px-4 py-2 text-gray-400 hover:text-emerald-600 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                    </a>
+                {{end}}
+                
+                {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
+                    {{if eq $i $.Pagination.CurrentPage}}
+                        <span class="px-5 py-2 bg-emerald-600 text-white font-black rounded-xl shadow-lg">{{$i}}</span>
+                    {{else}}
+                        <a href="{{buildFilterURL $.Query $.Filters $i}}" 
+                           class="px-5 py-2 text-gray-600 font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition">
+                            {{$i}}
+                        </a>
+                    {{end}}
+                {{end}}
+                
+                {{if .Pagination.HasNext}}
+                    <a href="{{buildFilterURL $.Query $.Filters (add .Pagination.CurrentPage 1)}}" 
+                       class="px-4 py-2 text-emerald-600 hover:text-emerald-500 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                    </a>
+                {{end}}
             </div>
         </section>
         {{end}}
 
         {{else}}
         <!-- No Results -->
-        <section class="text-center py-12">
-            <div class="bg-white rounded-lg shadow-md p-8">
-                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Tidak Ada Hasil</h3>
-                <p class="text-gray-600 mb-6">
-                    Tidak ditemukan hadits yang cocok dengan pencarian "<span class="font-semibold">{{.Query}}</span>" dan filter yang dipilih.
-                </p>
-                <div class="space-y-4 text-left max-w-md mx-auto">
-                    <p class="text-gray-600 font-medium">Saran:</p>
-                    <ul class="space-y-2 text-gray-600">
-                        <li>• Gunakan kata kunci yang berbeda</li>
-                        <li>• Periksa ejaan kata</li>
-                        <li>• Kurangi filter yang terlalu spesifik</li>
-                        <li>• Coba dengan kata yang lebih umum</li>
-                        <li>• Coba dalam bahasa Arab atau Indonesia</li>
-                        <li>• Periksa nomor hadith yang dimaksud</li>
-                    </ul>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
-                    <button onclick="clearFilters()" 
-                            class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
-                        🔄 Reset Filter
-                    </button>
-                    <a href="/" class="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition">
-                        🏠 Kembali ke Beranda
-                    </a>
-                </div>
+        <section class="text-center py-20 bg-white rounded-[3rem] shadow-2xl border border-dashed border-emerald-100 max-w-4xl mx-auto px-10 mb-12">
+            <div class="w-24 h-24 bg-red-50 text-red-200 rounded-full flex items-center justify-center mx-auto mb-8">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="text-4xl font-black text-gray-800 mb-4 tracking-tight">Tidak Ditemukan</h3>
+            <p class="text-gray-500 text-xl mb-12 leading-relaxed">
+                Kami tidak menemukan hadits yang cocok dengan kata kunci "<span class="text-red-500 font-bold">{{.Query}}</span>".
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="clearFilters()" 
+                        class="px-10 py-5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-black rounded-2xl transition-all shadow-sm">
+                    🔄 Atur Ulang Filter
+                </button>
+                <a href="/" class="px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-xl hover:scale-105">
+                    🏠 Kembali Beranda
+                </a>
             </div>
         </section>
         {{end}}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8">
-        <div class="container mx-auto px-4 text-center">
-            <p class="mb-2">Hadits.online - Kumpulan Hadits Nabi Muhammad SAW</p>
-            <p class="text-gray-400">© 2026 - Dibuat dengan cinta untuk pembelajaran Islam</p>
-        </div>
-    </footer>
+    {{template "footer" .}}
 
     <script src="/static/script.js"></script>
     <script>

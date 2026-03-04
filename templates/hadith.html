@@ -13,7 +13,7 @@
         :root {
             --arabic-size: 1.5rem;
             --id-size: 1rem;
-            --arabic-font: 'Amiri Quran';
+            --arabic-font: 'Noto Naskh Arabic';
             --id-font: 'Inter';
         }
         .arabic-text {
@@ -39,34 +39,46 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
     {{template "navbar" .}}
 
+    <!-- Hero Header -->
+    <section class="bg-emerald-900 text-white py-12 md:py-16 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10" 
+             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
+        
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <span class="px-4 py-1.5 bg-emerald-800/50 text-emerald-300 text-[10px] font-black rounded-full uppercase tracking-[0.2em] mb-4 inline-block border border-emerald-700">
+                {{.Info.Name}}
+            </span>
+            <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Hadits Ke-{{.Hadith.Number}}</h1>
+            <div class="flex justify-center items-center space-x-4 text-emerald-100/60 text-sm font-medium">
+                <span>{{.Info.Total}} Hadits dalam Koleksi</span>
+                <span>•</span>
+                <a href="/collection/{{$.Info.Slug}}" class="text-emerald-400 hover:text-white transition underline decoration-emerald-500/30 underline-offset-4">Kembali ke Kitab</a>
+            </div>
+        </div>
+    </section>
+
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-12 flex-grow">
         <!-- Hadith Content -->
-        <section class="bg-white rounded-lg shadow-lg p-8">
-            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section class="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 -mt-20 relative z-20 border border-emerald-50">
+            <div class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-50 pb-8">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800 mb-2">
-                        {{.Info.Name}} - Hadith {{.Hadith.Number}}
-                    </h1>
-                    <div class="flex space-x-4 text-sm text-gray-600">
-                        <span>Total hadits: {{.Info.Total}}</span>
-                        <span>•</span>
-                        <a href="/collection/{{$.Info.Slug}}" class="text-emerald-600 hover:text-emerald-800">
-                            Kembali ke koleksi
-                        </a>
-                    </div>
+                    <h2 class="text-xl font-black text-gray-800 tracking-tight">Detail Riwayat</h2>
+                    <p class="text-gray-400 text-sm font-medium mt-1 uppercase tracking-widest">Koleksi: {{.Info.Name}}</p>
                 </div>
                 
                 <!-- Appearance Settings Button -->
-                <button onclick="toggleSettings()" class="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition no-print">
-                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onclick="toggleSettings()" class="flex items-center space-x-3 px-6 py-3 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 rounded-2xl transition-all border border-gray-100 group no-print">
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                     </svg>
-                    <span class="text-sm font-medium text-gray-700">Pengaturan Teks</span>
+                    <span class="text-sm font-black uppercase tracking-tighter">Pengaturan Teks</span>
                 </button>
             </div>
 
@@ -106,10 +118,10 @@
                     <div>
                         <label class="text-xs font-semibold text-gray-500 uppercase block mb-2">Font Arab</label>
                         <select id="arabicFontSelect" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                            <option value="'Noto Naskh Arabic'">Noto Naskh</option>
                             <option value="'Amiri Quran'">Amiri Quran</option>
                             <option value="'Scheherazade New'">Scheherazade New</option>
                             <option value="'Lateef'">Lateef</option>
-                            <option value="'Noto Naskh Arabic'">Noto Naskh</option>
                         </select>
                     </div>
 
@@ -130,28 +142,34 @@
                 </div>
             </div>
 
-            <div class="space-y-8">
+            <div class="space-y-12">
                 <!-- Arabic Text -->
-                <div class="bg-emerald-50 rounded-lg p-6">
-                    <h2 class="text-lg font-semibold text-emerald-800 mb-4">نص الحديث (Teks Arab)</h2>
-                    <div class="arabic-text text-right text-gray-800 leading-loose">
+                <div class="bg-emerald-50/30 rounded-[2rem] p-8 md:p-12 border border-emerald-50">
+                    <div class="flex items-center space-x-3 mb-8">
+                        <div class="w-2 h-8 bg-emerald-500 rounded-full"></div>
+                        <h3 class="text-sm font-black text-emerald-800 uppercase tracking-widest">Matan Hadits</h3>
+                    </div>
+                    <div class="arabic-text text-right text-gray-800 leading-[2.5] md:leading-[3]">
                         {{.Hadith.Arab}}
                     </div>
                 </div>
 
                 <!-- Indonesian Translation -->
-                <div class="bg-blue-50 rounded-lg p-6">
-                    <h2 class="text-lg font-semibold text-blue-800 mb-4">Terjemahan Bahasa Indonesia</h2>
-                    <div class="indonesian-text text-gray-700">
+                <div class="bg-white rounded-[2rem] p-8 md:p-12 border border-gray-100 shadow-inner">
+                    <div class="flex items-center space-x-3 mb-8">
+                        <div class="w-2 h-8 bg-blue-500 rounded-full"></div>
+                        <h3 class="text-sm font-black text-blue-800 uppercase tracking-widest">Terjemahan</h3>
+                    </div>
+                    <div class="indonesian-text text-gray-600 leading-relaxed italic border-l-4 border-blue-50 pl-8">
                         {{.Hadith.ID}}
                     </div>
                 </div>
             </div>
 
             <!-- Action Buttons -->
-            <div class="mt-8 flex flex-wrap gap-4">
+            <div class="flex flex-wrap gap-4 pt-10 border-t border-gray-50">
                 <button onclick="toggleFavorite()" id="favorite-btn"
-                        class="favorite-btn px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-600 transition focus-ring"
+                        class="favorite-btn px-4 py-2 bg-gray-100 text-gray-600 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all font-black uppercase text-xs tracking-widest shadow-sm active:scale-95 flex items-center"
                         data-hadith-key="{{.Info.Slug}}/{{.Hadith.Number}}"
                         data-collection-name="{{.Info.Name}}"
                         data-slug="{{.Info.Slug}}"
@@ -159,43 +177,33 @@
                         data-arab="{{.Hadith.Arab}}"
                         data-id="{{.Hadith.ID}}"
                         data-url="/collection/{{.Info.Slug}}/{{.Hadith.Number}}">
-                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                     </svg>
-                    <span id="favorite-text">Tambah ke Favorit</span>
+                    <span id="favorite-text">Simpan</span>
                 </button>
+                
                 <button onclick="copyHadith()" 
-                        class="copy-btn px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition focus-ring">
-                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="copy-btn px-4 py-2 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-500 transition-all font-black uppercase text-xs tracking-widest shadow-lg shadow-emerald-200 active:scale-95 flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                     </svg>
                     Salin
                 </button>
+                
                 <button onclick="shareCurrentHadith()" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition focus-ring">
-                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 transition-all font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-200 active:scale-95 flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.032-4.026A9.001 9.001 0 0112 3c-4.474 0-8.268 3.12-9.032 7.326m0 0A9.001 9.001 0 0012 21c4.474 0 8.268-3.12 9.032-7.326"></path>
                     </svg>
                     Bagikan
-                </button>
-                <button onclick="window.print()" 
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition focus-ring no-print">
-                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                    </svg>
-                    Cetak
                 </button>
             </div>
         </section>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8">
-        <div class="container mx-auto px-4 text-center">
-            <p class="mb-2">hadits.online - Kumpulan Hadits Nabi Muhammad ﷺ</p>
-            <p class="text-gray-400">© 2026 - Dibuat dengan ❤️ untuk pembelajaran Islam</p>
-        </div>
-    </footer>
+    {{template "footer" .}}
 
     <script src="/static/script.js"></script>
     <script src="/static/favorites.js"></script>
@@ -265,7 +273,7 @@
             const defaults = {
                 arabicSize: '1.5',
                 idSize: '1',
-                arabicFont: "'Amiri Quran'",
+                arabicFont: "'Noto Naskh Arabic'",
                 idFont: "'Inter'"
             };
             
@@ -316,8 +324,8 @@
                 const isFavorite = favoritesManager.isFavorite(hadithKey);
                 
                 if (isFavorite) {
-                    btn.classList.remove('bg-gray-400', 'hover:bg-gray-600');
-                    btn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-red-500', 'text-white', 'shadow-red-100');
                     document.getElementById('favorite-text').textContent = 'Hapus dari Favorit';
                 }
             }
@@ -346,33 +354,32 @@
 </html>
 
     <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-        <div class="container mx-auto px-4 py-4">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-emerald-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-50 no-print">
+        <div class="container mx-auto px-4 py-5">
             <div class="flex justify-between items-center">
                 {{if .PrevHadith}}
                 <a href="/collection/{{$.Info.Slug}}/{{.PrevHadith.Number}}" 
-                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-medium px-1 py-2">
-                    <svg class="w-5 h-5 mr-2" fill="#059669" version="1.1" id="XMLID_287_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                        viewBox="0 0 24 24" xml:space="preserve"><g id="previous"><g><polygon points="18.5,23.7 7.2,12 18.5,0.3 19.9,1.7 10.1,12 19.9,22.3 	"/></g></g>
-                    </svg>
-                    Hadith {{.PrevHadith.Number}}
+                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-black text-xs uppercase tracking-widest px-4 py-2 bg-emerald-50 rounded-xl transition-all active:scale-95">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
+                    Hadits {{.PrevHadith.Number}}
                 </a>
                 {{else}}
-                <div class="w-4"></div>
+                <div class="invisible flex items-center px-4 py-2">Placeholder</div>
                 {{end}}
                 
-                <span class="text-gray-700 font-medium">Hadith {{.Hadith.Number}} dari {{.Info.Total}}</span>
+                <div class="text-center">
+                    <span class="text-gray-400 text-[10px] font-black uppercase tracking-widest block mb-1">Halaman</span>
+                    <span class="text-gray-800 font-black text-sm tracking-tighter">{{.Hadith.Number}} / {{.Info.Total}}</span>
+                </div>
                 
                 {{if .NextHadith}}
                 <a href="/collection/{{$.Info.Slug}}/{{.NextHadith.Number}}" 
-                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-medium px-1 py-2">
-                    Hadith {{.NextHadith.Number}} 
-                    <svg class="w-5 h-5 mr-2" fill="#059669" version="1.1" id="XMLID_287_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                        viewBox="0 0 24 24" xml:space="preserve"><g id="next"><g><polygon points="6.8,23.7 5.4,22.3 15.7,12 5.4,1.7 6.8,0.3 18.5,12 		"/></g></g>
-                    </svg>
+                   class="flex items-center text-white bg-emerald-600 hover:bg-emerald-500 font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-100 active:scale-95">
+                    Hadits {{.NextHadith.Number}} 
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
                 </a>
                 {{else}}
-                <div class="w-4"></div>
+                <div class="invisible flex items-center px-4 py-2">Placeholder</div>
                 {{end}}
             </div>
         </div>

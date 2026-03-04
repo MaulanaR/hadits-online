@@ -9,28 +9,50 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
-    <div class="container mx-auto px-4">
-        <div class="max-w-2xl mx-auto text-center">
-            <div class="bg-white rounded-lg shadow-lg p-8">
-                <div class="text-6xl font-bold text-emerald-600 mb-4">404</div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-4">Halaman Tidak Ditemukan</h1>
-                <p class="text-lg text-gray-600 mb-6">
-                    Halaman yang Anda cari <span class="font-mono bg-gray-100 px-2 py-1 rounded">{{.Path}}</span> tidak ditemukan.
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    <!-- Header -->
+    {{template "navbar" .}}
+
+    <!-- Hero Header -->
+    <section class="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10" 
+             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
+        
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <h1 class="text-5xl md:text-8xl font-black mb-6 tracking-tighter text-emerald-400">404</h1>
+            <h2 class="text-2xl md:text-4xl font-bold mb-4 tracking-tight">Halaman Tidak Ditemukan</h2>
+            <p class="text-emerald-100/70 text-lg md:text-xl max-w-2xl mx-auto font-light">
+                Maaf, halaman <span class="font-mono bg-white/10 px-2 py-1 rounded text-white text-sm">{{.Path}}</span> yang Anda cari tidak dapat kami temukan.
+            </p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-12 flex-grow">
+        <div class="max-w-2xl mx-auto -mt-20 relative z-20">
+            <div class="bg-white rounded-[3rem] shadow-2xl p-10 md:p-16 border border-emerald-50 text-center">
+                <div class="w-24 h-24 bg-red-50 text-red-200 rounded-full flex items-center justify-center mx-auto mb-8">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                
+                <p class="text-gray-500 text-lg mb-10 leading-relaxed">
+                    Mungkin tautan yang Anda klik sudah kedaluwarsa atau terjadi kesalahan pengetikan URL. Cobalah kembali ke beranda untuk memulai pencarian baru.
                 </p>
-                <div class="space-y-4">
-                    <p class="text-gray-600">Mungkin Anda sedang mencari:</p>
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="/" class="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition">
-                            🏠 Beranda
-                        </a>
-                        <a href="#collections" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
-                            📚 Koleksi Hadith
-                        </a>
-                    </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/" class="px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center">
+                        🏠 Kembali ke Beranda
+                    </a>
+                    <a href="/#collections" class="px-10 py-5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-2xl transition-all flex items-center justify-center">
+                        📚 Koleksi Hadits
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
-</body>
+    </main>
+
+    <!-- Footer -->
+    {{template "footer" .}}
 </html>

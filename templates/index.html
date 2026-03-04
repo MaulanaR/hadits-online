@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .arabic-text {
-            font-family: 'Amiri Quran', serif;
+            font-family: 'Noto Naskh Arabic', serif;
             line-height: 2.5;
             font-size: 1.5rem;
         }
@@ -21,44 +21,98 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
     {{template "navbar" .}}
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Hero Section -->
-        <section class="text-center mb-12">
-            <h2 class="text-4xl font-bold text-gray-800 mb-4">Kumpulan Hadits Nabi Muhammad ﷺ</h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                Jelajahi koleksi hadits dari berbagai kitab utama dalam Islam. Akses ribuan hadits terpercaya dengan terjemahan bahasa Indonesia.
+    <!-- Hero & Main Search Section -->
+    <section class="relative py-16 md:py-24 overflow-hidden bg-emerald-900 text-white">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-10" 
+             style="background-image: url('/static/patter_ketupat.png'); background-size: 120px; background-repeat: repeat;">
+        </div>
+        <!-- Gradient Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
+
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <h2 class="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
+                Cari & Pelajari <span class="text-emerald-400">Hadits</span>
+            </h2>
+            <p class="text-lg md:text-xl text-emerald-100/80 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
+                Akses ribuan hadits terpercaya dari kitab-kitab utama dengan terjemahan bahasa Indonesia yang akurat dan mudah dipahami.
             </p>
-        </section>
 
-        <!-- Statistics -->
-        <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            {{range .}}
-            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-                <div class="text-3xl font-bold text-emerald-600 mb-2">{{.Total}}</div>
-                <div class="text-gray-700 font-medium">{{.Name}}</div>
+            <!-- Hero Search Bar -->
+            <div class="max-w-3xl mx-auto relative group">
+                <input type="text" id="heroSearchInput" placeholder="Ketik kata kunci (contoh: niat, shalat, puasa)..." 
+                    class="w-full px-6 md:px-8 py-5 md:py-6 bg-white rounded-2xl md:rounded-3xl text-gray-900 text-lg md:text-xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-emerald-400/50 transition-all placeholder-gray-400">
+                <button onclick="performHeroSearch()" class="absolute right-3 top-3 md:right-4 md:top-4 bg-emerald-600 hover:bg-emerald-500 text-white px-6 md:px-10 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-bold shadow-lg transition-all transform group-focus-within:scale-105 active:scale-95">
+                    Cari
+                </button>
             </div>
-            {{end}}
+            
+            <div class="mt-6 flex flex-wrap justify-center gap-2 text-sm text-emerald-200/60">
+                <span>Populer:</span>
+                <button onclick="quickSearch('sabar')" class="hover:text-emerald-300 transition underline underline-offset-4 decoration-emerald-500/30">sabar</button>
+                <button onclick="quickSearch('sedekah')" class="hover:text-emerald-300 transition underline underline-offset-4 decoration-emerald-500/30">sedekah</button>
+                <button onclick="quickSearch('ilmu')" class="hover:text-emerald-300 transition underline underline-offset-4 decoration-emerald-500/30">ilmu</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-12 flex-grow">
+        <!-- Quick Stats / Icons -->
+        <section class="mb-16 -mt-20 relative z-20">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                {{range .}}
+                <a href="/collection/{{.Slug}}" class="bg-white rounded-2xl shadow-xl p-5 md:p-8 text-center hover:shadow-2xl hover:-translate-y-2 transition-all group border border-emerald-50">
+                    <div class="w-12 h-12 md:w-16 md:h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-inner">
+                        <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <div class="text-2xl md:text-3xl font-black text-gray-800 mb-1 tracking-tight">{{.Total}}</div>
+                    <div class="text-xs md:text-sm font-bold text-emerald-600 uppercase tracking-widest">{{.Name}}</div>
+                </a>
+                {{end}}
+            </div>
         </section>
 
-        <!-- Collections -->
-        <section id="collections" class="mb-12">
-            <h3 class="text-2xl font-bold text-gray-800 mb-6">Koleksi Hadits</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Collections Section -->
+        <section id="collections" class="mb-20">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h3 class="text-3xl font-black text-gray-800 tracking-tight">Koleksi Utama</h3>
+                    <div class="h-1.5 w-20 bg-emerald-500 rounded-full mt-2"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {{range .}}
-                <div class="bg-white rounded-lg shadow-md card-hover">
-                    <div class="p-6">
-                        <h4 class="text-xl font-semibold text-gray-800 mb-2">{{.Name}}</h4>
-                        <p class="text-gray-600 mb-4">{{.Total}} hadits</p>
+                <div class="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group overflow-hidden border border-gray-100">
+                    <div class="p-8">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="p-3 bg-emerald-50 rounded-xl text-emerald-600 group-hover:scale-110 transition-transform shadow-sm">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-tighter">
+                                {{.Total}} Hadits
+                            </span>
+                        </div>
+                        
+                        <h4 class="text-2xl font-black text-gray-800 mb-3 group-hover:text-emerald-700 transition-colors">{{.Name}}</h4>
+                        <p class="text-gray-500 text-sm mb-8 leading-relaxed">
+                            Akses lengkap hadits-hadits dari {{.Name}} dengan navigasi yang mudah dan pencarian nomor hadits.
+                        </p>
+                        
                         <a href="/collection/{{.Slug}}" 
-                           class="inline-flex items-center text-emerald-600 hover:text-emerald-800 font-medium transition-all">
-                            Buka Koleksi
-                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                           class="w-full inline-flex items-center justify-center px-6 py-4 bg-gray-50 hover:bg-emerald-600 text-gray-700 hover:text-white font-bold rounded-2xl transition-all shadow-sm group-hover:shadow-md">
+                            Buka Kitab
+                            <svg class="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                             </svg>
                         </a>
                     </div>
@@ -66,23 +120,53 @@
                 {{end}}
             </div>
         </section>
+
+        <!-- CTA Section -->
+        <section class="bg-emerald-600 rounded-[3rem] p-10 md:p-20 text-center text-white shadow-2xl relative overflow-hidden block sm:hidden">
+            <div class="absolute inset-0 opacity-10" 
+                 style="background-image: url('/static/patter_ketupat.png'); background-size: 80px; background-repeat: repeat;">
+            </div>
+            <div class="relative z-10">
+                <h3 class="text-3xl md:text-5xl font-black mb-6 leading-tight">Mulai Belajar Hadits <br class="hidden md:block"> Secara Gratis</h3>
+                <p class="text-emerald-100 text-lg md:text-xl max-w-2xl mx-auto mb-10 opacity-90">
+                    Bantu kami untuk terus mengembangkan platform ini agar semakin bermanfaat bagi umat Islam di seluruh dunia.
+                </p>
+                <div class="flex flex-col md:flex-row justify-center gap-4">
+                    <a href="/favorites" class="bg-white text-emerald-700 hover:bg-emerald-50 px-10 py-5 rounded-2xl font-black text-lg transition-all shadow-xl hover:scale-105 active:scale-95">
+                        ⭐ Lihat Favorit Saya
+                    </a>
+                    <a href="/donate" class="bg-yellow-400 text-emerald-900 hover:bg-yellow-300 px-10 py-5 rounded-2xl font-black text-lg transition-all shadow-xl hover:scale-105 active:scale-95">
+                        💝 Dukung Kami
+                    </a>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8">
-        <div class="container mx-auto px-4 text-center">
-            <p class="mb-2">hadits.online - Kumpulan Hadits Nabi Muhammad ﷺ</p>
-            <p class="text-gray-400">© 2026 - Dibuat dengan ❤️ untuk pembelajaran Islam</p>
-        </div>
-    </footer>
+    {{template "footer" .}}
 
     <script src="/static/script.js"></script>
     <script>
-        function performSearch() {
-            const query = document.getElementById('searchInput').value.trim();
+        function performHeroSearch() {
+            const query = document.getElementById('heroSearchInput').value.trim();
             if (query) {
                 window.location.href = '/search?q=' + encodeURIComponent(query);
             }
+        }
+
+        function quickSearch(word) {
+            window.location.href = '/search?q=' + encodeURIComponent(word);
+        }
+
+        // Hero Search Enter Key
+        const heroSearch = document.getElementById('heroSearchInput');
+        if (heroSearch) {
+            heroSearch.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performHeroSearch();
+                }
+            });
         }
     </script>
 </body>
