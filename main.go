@@ -7,12 +7,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 type Collection struct {
@@ -72,12 +75,75 @@ type FilteredResults struct {
 	Collections []CollectionInfo
 }
 
-var data *HadithData
-var tmpl *template.Template
+type MayarProductResponse struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Data    struct {
+		ID          string  `json:"id"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		Amount      float64 `json:"amount"`
+		Link        string  `json:"link"`
+		Image       string  `json:"image"`
+		TotalSales  float64 `json:"totalSales"`
+		TotalOrders int     `json:"totalOrders"`
+	} `json:"data"`
+}
+
+var (
+	data           *HadithData
+	tmpl           *template.Template
+	mayarApiKey    string
+	mayarProductId string
+)
 
 const (
 	ItemsPerPage = 20
 )
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+	mayarApiKey = os.Getenv("MAYAR_API_KEY")
+	mayarProductId = os.Getenv("MAYAR_PRODUCT_ID")
+}
+
+func getMayarProductDetail() (*MayarProductResponse, error) {
+	if mayarApiKey == "" || mayarProductId == "" {
+		return nil, fmt.Errorf("Mayar API credentials missing")
+	}
+
+	url := fmt.Sprintf("https://api.mayar.id/hl/v1/product/%s", mayarProductId)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+mayarApiKey)
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Mayar API returned status: %d", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var mayarResp MayarProductResponse
+	if err := json.Unmarshal(body, &mayarResp); err != nil {
+		return nil, err
+	}
+
+	return &mayarResp, nil
+}
 
 func loadData() {
 	data = &HadithData{
