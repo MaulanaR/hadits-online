@@ -3,7 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>hadits.online - Kumpulan Hadits</title>
+    <title>{{.SEO.Title}}</title>
+    <meta name="description" content="{{.SEO.Description}}">
+    <meta name="keywords" content="{{.SEO.Keywords}}">
+    <link rel="canonical" href="{{.SEO.Canonical}}">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{.SEO.OGUrl}}">
+    <meta property="og:title" content="{{.SEO.Title}}">
+    <meta property="og:description" content="{{.SEO.Description}}">
+    <meta property="og:image" content="https://hadits.online/static/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{.SEO.OGUrl}}">
+    <meta property="twitter:title" content="{{.SEO.Title}}">
+    <meta property="twitter:description" content="{{.SEO.Description}}">
+    <meta property="twitter:image" content="https://hadits.online/static/og-image.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,9 +54,9 @@
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
 
         <div class="container mx-auto px-4 relative z-10 text-center">
-            <h2 class="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
                 Cari & Pelajari <span class="text-emerald-400">Hadits</span>
-            </h2>
+            </h1>
             <p class="text-lg md:text-xl text-emerald-100/80 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
                 Akses ribuan hadits terpercaya dari kitab-kitab utama dengan terjemahan bahasa Indonesia yang akurat dan mudah dipahami.
             </p>
@@ -65,7 +84,7 @@
         <!-- Quick Stats / Icons -->
         <section class="mb-16 -mt-20 relative z-20">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                {{range .}}
+                {{range .Data}}
                 <a href="/collection/{{.Slug}}" class="bg-white rounded-2xl shadow-xl p-5 md:p-8 text-center hover:shadow-2xl hover:-translate-y-2 transition-all group border border-emerald-50">
                     <div class="w-12 h-12 md:w-16 md:h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-inner">
                         <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +108,7 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {{range .}}
+                {{range .Data}}
                 <div class="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 group overflow-hidden border border-gray-100">
                     <div class="p-8">
                         <div class="flex justify-between items-start mb-6">

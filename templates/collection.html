@@ -3,7 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Info.Name}} - hadits.online</title>
+    <title>{{.SEO.Title}}</title>
+    <meta name="description" content="{{.SEO.Description}}">
+    <meta name="keywords" content="{{.SEO.Keywords}}">
+    <link rel="canonical" href="{{.SEO.Canonical}}">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{.SEO.OGUrl}}">
+    <meta property="og:title" content="{{.SEO.Title}}">
+    <meta property="og:description" content="{{.SEO.Description}}">
+    <meta property="og:image" content="https://hadits.online/static/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{.SEO.OGUrl}}">
+    <meta property="twitter:title" content="{{.SEO.Title}}">
+    <meta property="twitter:description" content="{{.SEO.Description}}">
+    <meta property="twitter:image" content="https://hadits.online/static/og-image.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,7 +73,7 @@
     <main class="container mx-auto px-4 py-12 flex-grow">
         <!-- Hadiths List -->
         <section id="hadiths-container" class="space-y-8">
-            {{if .Hadiths}}
+            {{if .Data}}
                 <!-- Pagination Info Top -->
                 <div class="bg-white rounded-2xl shadow-sm border border-emerald-50 p-4 md:p-6 flex flex-wrap justify-between items-center gap-4 mb-8">
                     <div class="text-gray-600 font-medium text-sm">
@@ -94,7 +113,7 @@
 
                 <!-- Hadiths Cards -->
                 <div class="grid grid-cols-1 gap-6 md:gap-10">
-                {{range .Hadiths}}
+                {{range .Data}}
                 <div class="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all border border-gray-100 overflow-hidden group">
                     <div class="p-6 md:p-10">
                         <div class="flex items-center justify-between mb-8">

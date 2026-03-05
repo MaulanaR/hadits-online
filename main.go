@@ -219,9 +219,41 @@ func pageNumbers(current, total int) []int {
 	return pages
 }
 
+type SEOData struct {
+	Title       string
+	Description string
+	Keywords    string
+	OGImage     string
+	OGUrl       string
+	Canonical   string
+}
+
+type PageData struct {
+	SEO        SEOData
+	Data       interface{}
+	Info       *CollectionInfo
+	Hadith     *Collection
+	PrevHadith *Collection
+	NextHadith *Collection
+	Collection string
+	Pagination Pagination
+}
+
 func favoritesHandler(w http.ResponseWriter, r *http.Request) {
+	seo := SEOData{
+		Title:       "Hadits Favorit Saya - hadits.online",
+		Description: "Daftar hadits pilihan yang Anda simpan untuk dipelajari lebih lanjut.",
+		Keywords:    "hadits favorit, simpan hadits, belajar islam",
+		OGUrl:       "https://hadits.online/favorites",
+		Canonical:   "https://hadits.online/favorites",
+	}
+	
+	pageData := PageData{
+		SEO: seo,
+	}
+
 	tmpl := template.Must(template.ParseFiles("templates/favorites.html", "templates/components/navbar.html", "templates/components/footer.html"))
-	if err := tmpl.Execute(w, nil); err != nil {
+	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -236,8 +268,21 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}
 
+	seo := SEOData{
+		Title:       "hadits.online - Pusat Belajar Hadits Terlengkap Bahasa Indonesia",
+		Description: "Cari dan pelajari ribuan hadits shahih dari Bukhari, Muslim, Abu Daud, dan kitab lainnya dengan terjemahan Indonesia yang akurat.",
+		Keywords:    "hadits online, hadits shahih, bukhari, muslim, terjemahan hadits, belajar islam",
+		OGUrl:       "https://hadits.online/",
+		Canonical:   "https://hadits.online/",
+	}
+
+	pageData := PageData{
+		SEO:  seo,
+		Data: data.Info,
+	}
+
 	tmpl := template.Must(template.New("index.html").Funcs(funcMap).ParseFiles("templates/index.html", "templates/components/navbar.html", "templates/components/footer.html"))
-	if err := tmpl.Execute(w, data.Info); err != nil {
+	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -304,14 +349,18 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 		HasPrev:     page > 1,
 	}
 
-	pageData := struct {
-		Info       *CollectionInfo
-		Hadiths    []Collection
-		Collection string
-		Pagination Pagination
-	}{
+	seo := SEOData{
+		Title:       fmt.Sprintf("Koleksi Hadits %s - hadits.online", info.Name),
+		Description: fmt.Sprintf("Daftar lengkap hadits dari kitab %s. Tersedia %d hadits dengan terjemahan Indonesia.", info.Name, info.Total),
+		Keywords:    fmt.Sprintf("hadits %s, kitab %s, kumpulan hadits", info.Name, info.Name),
+		OGUrl:       fmt.Sprintf("https://hadits.online/collection/%s", slug),
+		Canonical:   fmt.Sprintf("https://hadits.online/collection/%s", slug),
+	}
+
+	pageData := PageData{
+		SEO:        seo,
 		Info:       info,
-		Hadiths:    paginatedHadiths,
+		Data:       paginatedHadiths,
 		Collection: slug,
 		Pagination: pagination,
 	}
@@ -384,12 +433,21 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 		nextHadith = &collection[hadithIndex+1]
 	}
 
-	pageData := struct {
-		Info       *CollectionInfo
-		Hadith     *Collection
-		PrevHadith *Collection
-		NextHadith *Collection
-	}{
+	description := hadith.ID
+	if len(description) > 160 {
+		description = description[:157] + "..."
+	}
+
+	seo := SEOData{
+		Title:       fmt.Sprintf("Hadits %s No. %d - hadits.online", info.Name, hadith.Number),
+		Description: description,
+		Keywords:    fmt.Sprintf("hadits %s %d, %s no %d", info.Name, hadith.Number, info.Name, hadith.Number),
+		OGUrl:       fmt.Sprintf("https://hadits.online/collection/%s/%d", slug, hadith.Number),
+		Canonical:   fmt.Sprintf("https://hadits.online/collection/%s/%d", slug, hadith.Number),
+	}
+
+	pageData := PageData{
+		SEO:        seo,
 		Info:       info,
 		Hadith:     hadith,
 		PrevHadith: prevHadith,
@@ -469,7 +527,24 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		HasPrev:     page > 1,
 	}
 
-	pageData := FilteredResults{
+	seo := SEOData{
+		Title:       fmt.Sprintf("Hasil Pencarian: %s - hadits.online", filters.Query),
+		Description: fmt.Sprintf("Temukan %d hadits terkait %s di hadits.online.", totalItems, filters.Query),
+		Keywords:    fmt.Sprintf("cari hadits %s, hasil pencarian %s", filters.Query, filters.Query),
+		OGUrl:       fmt.Sprintf("https://hadits.online/search?q=%s", filters.Query),
+		Canonical:   fmt.Sprintf("https://hadits.online/search?q=%s", filters.Query),
+	}
+
+	pageData := struct {
+		SEO         SEOData
+		Query       string
+		Filters     SearchFilters
+		Results     []SearchResult
+		Pagination  Pagination
+		TotalItems  int
+		Collections []CollectionInfo
+	}{
+		SEO:         seo,
 		Query:       filters.Query,
 		Filters:     filters,
 		Results:     paginatedResults,
@@ -782,6 +857,40 @@ func getPageURL(baseURL string, page int) string {
 	return baseURL + separator + "page=" + strconv.Itoa(page)
 }
 
+func robotsHandler(w http.ResponseWriter, r *http.Request) {
+	content := "User-agent: *\nAllow: /\nSitemap: https://hadits.online/sitemap.xml"
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(content))
+}
+
+func sitemapHandler(w http.ResponseWriter, r *http.Request) {
+	var sb strings.Builder
+	sb.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	sb.WriteString("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
+
+	// Home
+	sb.WriteString("  <url>\n    <loc>https://hadits.online/</loc>\n    <priority>1.0</priority>\n  </url>\n")
+	sb.WriteString("  <url>\n    <loc>https://hadits.online/donate</loc>\n    <priority>0.5</priority>\n  </url>\n")
+	sb.WriteString("  <url>\n    <loc>https://hadits.online/faq</loc>\n    <priority>0.5</priority>\n  </url>\n")
+
+	// Collections
+	data.mu.RLock()
+	for _, info := range data.Info {
+		sb.WriteString(fmt.Sprintf("  <url>\n    <loc>https://hadits.online/collection/%s</loc>\n    <priority>0.8</priority>\n  </url>\n", info.Slug))
+		
+		// Individual Hadiths (limited to first 100 for sitemap size, or all if preferred)
+		// For true SEO, we want all, but sitemaps have limits. Let's do all for now as it's not THAT many.
+		for _, h := range data.Collections[info.Slug] {
+			sb.WriteString(fmt.Sprintf("  <url>\n    <loc>https://hadits.online/collection/%s/%d</loc>\n    <priority>0.6</priority>\n  </url>\n", info.Slug, h.Number))
+		}
+	}
+	data.mu.RUnlock()
+
+	sb.WriteString("</urlset>")
+	w.Header().Set("Content-Type", "application/xml")
+	w.Write([]byte(sb.String()))
+}
+
 func main() {
 	log.Println("Loading hadith data...")
 	loadData()
@@ -797,6 +906,8 @@ func main() {
 	r.HandleFunc("/search", searchHandler)
 	r.HandleFunc("/donate", donateHandler)
 	r.HandleFunc("/faq", faqHandler)
+	r.HandleFunc("/robots.txt", robotsHandler)
+	r.HandleFunc("/sitemap.xml", sitemapHandler)
 
 	// Serve static files
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
@@ -808,9 +919,16 @@ func main() {
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		tmpl := template.Must(template.ParseFiles("templates/404.html", "templates/components/navbar.html", "templates/components/footer.html"))
+		
+		seo := SEOData{
+			Title: "Halaman Tidak Ditemukan - hadits.online",
+			Description: "Maaf, halaman yang Anda cari tidak dapat ditemukan.",
+		}
+		
 		tmpl.Execute(w, struct {
+			SEO  SEOData
 			Path string
-		}{Path: r.URL.Path})
+		}{SEO: seo, Path: r.URL.Path})
 	})
 
 	log.Println("Server starting on :8082")
@@ -824,6 +942,22 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error fetching Mayar product: %v", err)
 		// Continue anyway, template will handle nil data
+	}
+
+	seo := SEOData{
+		Title:       "Donasi & Dukung Kami - hadits.online",
+		Description: "Bantu kami menjaga keberlangsungan layanan Hadits.online agar tetap gratis bagi umat Islam.",
+		Keywords:    "donasi islam, dukung dakwah digital, hadits online",
+		OGUrl:       "https://hadits.online/donate",
+		Canonical:   "https://hadits.online/donate",
+	}
+
+	pageData := struct {
+		SEO  SEOData
+		Data *MayarProductResponse
+	}{
+		SEO:  seo,
+		Data: mayarData,
 	}
 
 	tmpl := template.Must(template.New("donate.html").Funcs(template.FuncMap{
@@ -850,13 +984,25 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}).ParseFiles("templates/donate.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
-	if err := tmpl.Execute(w, mayarData); err != nil {
+	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
 }
 
 // FAQ page handler
 func faqHandler(w http.ResponseWriter, r *http.Request) {
+	seo := SEOData{
+		Title:       "Pertanyaan Umum (FAQ) - hadits.online",
+		Description: "Jawaban atas pertanyaan yang sering diajukan mengenai penggunaan dan fitur Hadits.online.",
+		Keywords:    "faq hadits online, bantuan hadits",
+		OGUrl:       "https://hadits.online/faq",
+		Canonical:   "https://hadits.online/faq",
+	}
+
+	pageData := PageData{
+		SEO: seo,
+	}
+
 	tmpl := template.Must(template.New("faq.html").Funcs(template.FuncMap{
 		"add":         add,
 		"add1":        add1,
@@ -865,7 +1011,7 @@ func faqHandler(w http.ResponseWriter, r *http.Request) {
 		"pageNumbers": pageNumbers,
 	}).ParseFiles("templates/faq.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
-	if err := tmpl.Execute(w, nil); err != nil {
+	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
 }

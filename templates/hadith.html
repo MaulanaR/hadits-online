@@ -3,8 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hadits {{.Hadith.Number}} - {{.Info.Name}} - hadits.online</title>
+    <title>{{.SEO.Title}}</title>
+    <meta name="description" content="{{.SEO.Description}}">
+    <meta name="keywords" content="{{.SEO.Keywords}}">
+    <link rel="canonical" href="{{.SEO.Canonical}}">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{.SEO.OGUrl}}">
+    <meta property="og:title" content="{{.SEO.Title}}">
+    <meta property="og:description" content="{{.SEO.Description}}">
+    <meta property="og:image" content="https://hadits.online/static/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{.SEO.OGUrl}}">
+    <meta property="twitter:title" content="{{.SEO.Title}}">
+    <meta property="twitter:description" content="{{.SEO.Description}}">
+    <meta property="twitter:image" content="https://hadits.online/static/og-image.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Message",
+      "name": "{{.SEO.Title}}",
+      "text": "{{.Hadith.ID}}",
+      "author": {
+        "@type": "Person",
+        "name": "{{.Info.Name}}"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "hadits.online"
+      }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&family=Lateef&family=Scheherazade+New&family=Roboto:wght@300;400;700&family=Noto+Naskh+Arabic&display=swap" rel="stylesheet">

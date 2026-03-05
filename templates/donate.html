@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donasi - Hadits.online</title>
+    <title>{{.SEO.Title}}</title>
+    <meta name="description" content="{{.SEO.Description}}">
+    <meta name="keywords" content="{{.SEO.Keywords}}">
+    <link rel="canonical" href="{{.SEO.Canonical}}">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,13 +41,13 @@
                 <!-- Donation Card -->
                 <div class="md:col-span-2 space-y-8">
                     <div class="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 border border-emerald-50">
-                        {{if .}}
+                        {{if .Data}}
                         <div class="flex items-center space-x-4 mb-8">
                             <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-black text-gray-800 tracking-tight">{{.Data.Name}}</h3>
+                                <h3 class="text-2xl font-black text-gray-800 tracking-tight">{{.Data.Data.Name}}</h3>
                                 <p class="text-emerald-600 font-bold text-sm uppercase tracking-widest">Program Donasi Terverifikasi</p>
                             </div>
                         </div>
@@ -50,7 +55,7 @@
                         <div class="prose prose-emerald mb-10 text-gray-600 leading-relaxed">
                             <h2>Mengapa Donasi Penting?</h2><br>
                             <h3>1. Biaya Server & Domain</h3>
-                            Setiap tahun, kami membutuhkan biaya untuk server, domain, dan maintenance untuk memastikan aplikasi tetap berjalan lancar.<br>
+                            Setiap tahun, kami membutuhkan biaya untuk server, domain, and maintenance untuk memastikan aplikasi tetap berjalan lancar.<br>
                             <br>
                             <h3>2. Pengembangan & Maintenance</h3>
                             Donasi digunakan untuk pengembangan fitur baru, perbaikan bug, dan peningkatan performa aplikasi.<br>
@@ -63,10 +68,10 @@
                         <div class="mb-10">
                             <div class="flex justify-between items-end mb-3">
                                 <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Dana Terkumpul</span>
-                                <span class="text-lg font-black text-emerald-600">{{formatRupiah .Data.TotalSales}}</span>
+                                <span class="text-lg font-black text-emerald-600">{{formatRupiah .Data.Data.TotalSales}}</span>
                             </div>
                             <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-50">
-                                <div class="h-full bg-emerald-500 rounded-full shadow-lg transition-all duration-1000" style="width: {{calculatePercentage .Data.TotalSales 1500000}}%;"></div>
+                                <div class="h-full bg-emerald-500 rounded-full shadow-lg transition-all duration-1000" style="width: {{calculatePercentage .Data.Data.TotalSales 1500000}}%;"></div>
                             </div>
                             <p class="text-[10px] text-gray-400 mt-2 italic">* Target operasional tahunan: Rp 1.500.000</p>
                         </div>
@@ -95,7 +100,7 @@
                         <div class="space-y-6">
                             <div>
                                 <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1">Total Donatur</p>
-                                <p class="text-3xl font-black tracking-tighter">{{if .}}{{.Data.TotalOrders}}{{else}}0{{end}}</p>
+                                <p class="text-3xl font-black tracking-tighter">{{if .Data}}{{.Data.Data.TotalOrders}}{{else}}0{{end}}</p>
                             </div>
                             <div>
                                 <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1">Metode Pembayaran</p>
