@@ -923,6 +923,12 @@ func main() {
 	r.HandleFunc("/faq", faqHandler)
 	r.HandleFunc("/robots.txt", robotsHandler)
 	r.HandleFunc("/sitemap.xml", sitemapHandler)
+	r.HandleFunc("/manifest.json", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/manifest.json")
+	})
+	r.HandleFunc("/service-worker.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/service-worker.js")
+	})
 
 	// Serve static files
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
@@ -1046,7 +1052,7 @@ Setiap jawaban WAJIB mengikuti format berikut:
    - Jelaskan latar belakang hadis atau konteks umum tema tersebut.
 
 5. Istinbath (Pelajaran & Hukum): 
-   - Berikan poin-poin hukum, etika, atau hikmah yang terkandung.
+   - Berikan poin-poin ilmu, hukum, etika, atau hikmah yang terkandung.
 
 6. Relevansi Kontemporer: 
    - Penerapan praktis dalam kehidupan modern.
@@ -1059,8 +1065,8 @@ Guiding Principles:
 - Tetap bersandar pada literatur klasik (Turats) dan pendapat ulama otoritatif.
 - Gunakan Markdown untuk struktur yang rapi.`
 
-	userPrompt := fmt.Sprintf("Kitab: %s\nNomor: %d (MFAB: %d)\n\nArab:\n%s\n\nTerjemahan:\n%s",
-		collectionName, hadith.Number, hadith.Number, hadith.Arab, hadith.ID)
+	userPrompt := fmt.Sprintf("Kitab: %s\nNomor: %d \n\nArab:\n%s\n\nTerjemahan:\n%s",
+		collectionName, hadith.Number, hadith.Arab, hadith.ID)
 
 	groqReq := GroqRequest{
 		Model: "llama-3.3-70b-versatile",
