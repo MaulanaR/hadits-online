@@ -20,9 +20,10 @@ import (
 )
 
 type Collection struct {
-	Number int    `json:"number"`
-	Arab   string `json:"arab"`
-	ID     string `json:"id"`
+	Number      int    `json:"number"`
+	Arab        string `json:"arab"`
+	ID          string `json:"id"`
+	Explanation string `json:"explanation,omitempty"`
 }
 
 type CollectionInfo struct {
@@ -96,6 +97,7 @@ var (
 	tmpl           *template.Template
 	mayarApiKey    string
 	mayarProductId string
+	groqApiKey     string
 )
 
 const (
@@ -108,6 +110,7 @@ func init() {
 	}
 	mayarApiKey = os.Getenv("MAYAR_API_KEY")
 	mayarProductId = os.Getenv("MAYAR_PRODUCT_ID")
+	groqApiKey = os.Getenv("GROQ_API_KEY")
 }
 
 func getMayarProductDetail() (*MayarProductResponse, error) {
@@ -254,7 +257,7 @@ func favoritesHandler(w http.ResponseWriter, r *http.Request) {
 		OGUrl:       "https://hadits.online/favorites",
 		Canonical:   "https://hadits.online/favorites",
 	}
-	
+
 	pageData := PageData{
 		SEO: seo,
 	}
@@ -888,7 +891,7 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	data.mu.RLock()
 	for _, info := range data.Info {
 		sb.WriteString(fmt.Sprintf("  <url>\n    <loc>https://hadits.online/collection/%s</loc>\n    <priority>0.8</priority>\n  </url>\n", info.Slug))
-		
+
 		// Individual Hadiths (limited to first 100 for sitemap size, or all if preferred)
 		// For true SEO, we want all, but sitemaps have limits. Let's do all for now as it's not THAT many.
 		for _, h := range data.Collections[info.Slug] {
@@ -915,6 +918,7 @@ func main() {
 	r.HandleFunc("/collection/{slug}", collectionHandler)
 	r.HandleFunc("/collection/{slug}/{number}", hadithHandler)
 	r.HandleFunc("/search", searchHandler)
+	r.HandleFunc("/api/explain", explainHandler)
 	r.HandleFunc("/donate", donateHandler)
 	r.HandleFunc("/faq", faqHandler)
 	r.HandleFunc("/robots.txt", robotsHandler)
@@ -930,12 +934,12 @@ func main() {
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		tmpl := template.Must(template.ParseFiles("templates/404.html", "templates/components/navbar.html", "templates/components/footer.html"))
-		
+
 		seo := SEOData{
-			Title: "Halaman Tidak Ditemukan - hadits.online",
+			Title:       "Halaman Tidak Ditemukan - hadits.online",
 			Description: "Maaf, halaman yang Anda cari tidak dapat ditemukan.",
 		}
-		
+
 		tmpl.Execute(w, struct {
 			SEO  SEOData
 			Path string
@@ -945,6 +949,182 @@ func main() {
 	log.Println("Server starting on :8082")
 	log.Println("Access the application at: http://localhost:8082")
 	log.Fatal(http.ListenAndServe(":8082", r))
+}
+
+type GroqMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type GroqRequest struct {
+	Model    string        `json:"model"`
+	Messages []GroqMessage `json:"messages"`
+}
+
+type GroqResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+}
+
+func explainHandler(w http.ResponseWriter, r *http.Request) {
+	if groqApiKey == "" {
+		http.Error(w, "AI configuration missing", http.StatusServiceUnavailable)
+		return
+	}
+
+	slug := r.URL.Query().Get("slug")
+	numberStr := r.URL.Query().Get("number")
+
+	if slug == "" || numberStr == "" {
+		http.Error(w, "Missing parameters", http.StatusBadRequest)
+		return
+	}
+
+	number, _ := strconv.Atoi(numberStr)
+
+	data.mu.RLock()
+	collection, exists := data.Collections[slug]
+	data.mu.RUnlock()
+
+	if !exists {
+		http.Error(w, "Collection not found", http.StatusNotFound)
+		return
+	}
+
+	var hadith *Collection
+	for _, h := range collection {
+		if h.Number == number {
+			hadith = &h
+			break
+		}
+	}
+
+	if hadith == nil {
+		http.Error(w, "Hadith not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if explanation already exists in cache
+	if hadith.Explanation != "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"explanation": hadith.Explanation,
+		})
+		return
+	}
+
+	// Get collection name
+	collectionName := slug
+	for _, info := range data.Info {
+		if info.Slug == slug {
+			collectionName = info.Name
+			break
+		}
+	}
+
+	systemPrompt := `Role: Anda adalah seorang Ahli Ilmu Hadis dan Syarah (Penjelas) Hadis Digital yang akurat, objektif, dan mendalam.
+
+Task: Tugas Anda adalah membedah teks hadis yang diberikan pengguna ke dalam struktur penjelasan yang baku dan mudah dipahami.
+
+Output Structure:
+Setiap jawaban WAJIB mengikuti format berikut:
+
+1. Disclaimer (WAJIB di posisi paling atas):
+   - Gunakan format Blockquote atau Italic: "> ⚠️ Disclaimer: Respons ini dihasilkan oleh AI hanya sebagai bahan pertimbangan, diskusi, atau wawasan tambahan. Jawaban ini bukan merupakan fatwa hukum dan tidak bisa dijadikan rujukan utama dalam beragama. Silakan berkonsultasi dengan ulama atau ahli agama yang kredibel untuk keputusan hukum yang mengikat."
+
+2. Identitas & Takhrij: 
+   - Sebutkan perawi utama (Sahabat yang meriwayatkan).
+   - Sebutkan derajat hadis (Sahih/Hasan/Dhaif) beserta sumber kitabnya (Misal: HR. Bukhari no. 123).
+
+3. Makna Lughawi (Bahasa): 
+   - Jelaskan istilah sulit atau kata kunci secara ringkas.
+
+4. Asbabul Wurud (Konteks): 
+   - Jelaskan latar belakang hadis atau konteks umum tema tersebut.
+
+5. Istinbath (Pelajaran & Hukum): 
+   - Berikan poin-poin hukum, etika, atau hikmah yang terkandung.
+
+6. Relevansi Kontemporer: 
+   - Penerapan praktis dalam kehidupan modern.
+
+7. Sumber Rujukan:
+   - Sebutkan kitab Syarah yang digunakan (Contoh: Fathul Bari, Syarah An-Nawawi, dll).
+
+Guiding Principles:
+- Jika hadis berstatus Dhaif (lemah), berikan catatan tambahan setelah disclaimer.
+- Tetap bersandar pada literatur klasik (Turats) dan pendapat ulama otoritatif.
+- Gunakan Markdown untuk struktur yang rapi.`
+
+	userPrompt := fmt.Sprintf("Kitab: %s\nNomor: %d (MFAB: %d)\n\nArab:\n%s\n\nTerjemahan:\n%s",
+		collectionName, hadith.Number, hadith.Number, hadith.Arab, hadith.ID)
+
+	groqReq := GroqRequest{
+		Model: "llama-3.3-70b-versatile",
+		Messages: []GroqMessage{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: userPrompt},
+		},
+	}
+
+	jsonData, _ := json.Marshal(groqReq)
+	req, _ := http.NewRequest("POST", "https://api.groq.com/openai/v1/chat/completions", strings.NewReader(string(jsonData)))
+	req.Header.Add("Authorization", "Bearer "+groqApiKey)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Error calling AI API", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	var groqResp GroqResponse
+	json.Unmarshal(body, &groqResp)
+
+	if len(groqResp.Choices) == 0 {
+		http.Error(w, "No response from AI", http.StatusInternalServerError)
+		return
+	}
+
+	explanation := groqResp.Choices[0].Message.Content
+
+	// Update in-memory data and save to file
+	data.mu.Lock()
+	var updatedCollection []Collection
+	for i := range data.Collections[slug] {
+		if data.Collections[slug][i].Number == number {
+			data.Collections[slug][i].Explanation = explanation
+			break
+		}
+	}
+	// Create a deep copy of the collection slice for thread-safe file writing
+	updatedCollection = make([]Collection, len(data.Collections[slug]))
+	copy(updatedCollection, data.Collections[slug])
+	data.mu.Unlock()
+
+	go func(s string, coll []Collection) {
+		filename := "resource/" + s + ".json"
+		jsonData, err := json.MarshalIndent(coll, "", "  ")
+		if err != nil {
+			log.Printf("Error marshaling collection %s for caching: %v", s, err)
+			return
+		}
+		err = ioutil.WriteFile(filename, jsonData, 0644)
+		if err != nil {
+			log.Printf("Error writing cache to %s: %v", filename, err)
+		}
+	}(slug, updatedCollection)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"explanation": explanation,
+	})
 }
 
 // Donation page handler

@@ -23,7 +23,8 @@
     <meta property="twitter:description" content="{{.SEO.Description}}">
     <meta property="twitter:image" content="https://hadits.online/static/og-image.png">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -94,6 +95,8 @@
             <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Hadits Ke-{{.Hadith.Number}}</h1>
             <div class="flex justify-center items-center space-x-4 text-emerald-100/60 text-sm font-medium">
                 <span>{{.Info.Total}} Hadits dalam Koleksi</span>
+                <span>•</span>
+                <span>MFAB: {{.Hadith.Number}}</span>
                 <span>•</span>
                 <a href="/collection/{{$.Info.Slug}}" class="text-emerald-400 hover:text-white transition underline decoration-emerald-500/30 underline-offset-4">Kembali ke Kitab</a>
             </div>
@@ -236,6 +239,32 @@
                     Bagikan
                 </button>
             </div>
+
+            <!-- AI Explanation Section -->
+            <div class="pt-10 border-t border-gray-50">
+                <div class="flex flex-col items-center">
+                    <button id="explainBtn" onclick="fetchAIExplanation()" 
+                            class="group relative inline-flex items-center justify-center px-8 py-4 font-black uppercase tracking-widest text-white transition-all duration-200 bg-emerald-900 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 shadow-xl hover:bg-emerald-800 active:scale-95">
+                        <svg class="w-5 h-5 mr-3 text-emerald-400 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        Pembahasan Lebih Rinci (AI)
+                    </button>
+                    
+                    <div id="aiLoading" class="hidden mt-8 flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-900"></div>
+                        <p class="mt-4 text-emerald-800 font-bold animate-pulse">Sedang membedah hadits...</p>
+                    </div>
+
+                    <div id="aiResult" class="hidden mt-10 w-full bg-emerald-50/30 rounded-[2.5rem] p-8 md:p-12 border border-emerald-100 shadow-inner">
+                        <div class="flex items-center space-x-3 mb-8">
+                            <div class="w-2 h-8 bg-emerald-900 rounded-full"></div>
+                            <h3 class="text-sm font-black text-emerald-900 uppercase tracking-widest">Analisis Syarah Digital</h3>
+                        </div>
+                        <div class="prose prose-emerald max-w-none text-gray-800" id="aiContent">{{.Hadith.Explanation}}</div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 
@@ -366,6 +395,18 @@
                     document.getElementById('favorite-text').textContent = 'Hapus dari Favorit';
                 }
             }
+
+            // Handle cached AI explanation
+            const aiContent = document.getElementById('aiContent');
+            const aiResult = document.getElementById('aiResult');
+            const explainBtn = document.getElementById('explainBtn');
+            
+            if (aiContent && aiContent.textContent.trim() !== "") {
+                const rawMarkdown = aiContent.textContent;
+                aiContent.innerHTML = marked.parse(rawMarkdown);
+                aiResult.classList.remove('hidden');
+                explainBtn.classList.add('hidden');
+            }
         });
 
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
@@ -386,6 +427,33 @@
                 {{end}}
             }
         });
+
+        async function fetchAIExplanation() {
+            const btn = document.getElementById('explainBtn');
+            const loading = document.getElementById('aiLoading');
+            const result = document.getElementById('aiResult');
+            const content = document.getElementById('aiContent');
+
+            btn.classList.add('hidden');
+            loading.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            try {
+                const response = await fetch(`/api/explain?slug={{.Info.Slug}}&number={{.Hadith.Number}}`);
+                if (!response.ok) throw new Error('Gagal mendapatkan penjelasan AI');
+                
+                const data = await response.json();
+                content.innerHTML = marked.parse(data.explanation);
+                
+                loading.classList.add('hidden');
+                result.classList.remove('hidden');
+            } catch (error) {
+                console.error(error);
+                alert('Terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.');
+                btn.classList.remove('hidden');
+                loading.classList.add('hidden');
+            }
+        }
     </script>
 </body>
 </html>
