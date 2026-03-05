@@ -845,6 +845,9 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return percent
 		},
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
 	}).ParseFiles("templates/donate.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
 	if err := tmpl.Execute(w, mayarData); err != nil {
