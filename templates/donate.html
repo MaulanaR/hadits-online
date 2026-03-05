@@ -10,113 +10,132 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
     {{template "navbar" .}}
 
+    <!-- Hero Header -->
+    <section class="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10" 
+             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-emerald-900/50 to-emerald-900"></div>
+        
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <h1 class="text-4xl md:text-6xl font-black mb-6 tracking-tight">Dukung Dakwah Digital</h1>
+            <p class="text-emerald-100/70 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
+                Bantu kami menjaga keberlangsungan layanan <span class="text-white font-bold">Hadits.online</span> agar tetap gratis dan dapat diakses oleh seluruh umat Islam.
+            </p>
+        </div>
+    </section>
+
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Donation Hero -->
-        <section class="text-center mb-12">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-4xl font-bold text-gray-800 mb-6">Dukung Pengembangan Aplikasi</h2>
-                <p class="text-xl text-gray-600 mb-8">
-                    Aplikasi Hadits.online disediakan untuk <span class="text-emerald-600 font-semibold">demi keberlangsungan</span> dan kemudahan akses gratis bagi semua umat Islam.
-                </p>
-                
-                <!-- Donation Progress -->
-                <div class="bg-white rounded-lg shadow-md p-8 mb-8">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Target Donasi Tahun Ini</h3>
-                    <div class="text-3xl font-bold text-emerald-600 mb-2">Rp 15.000.000</div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="text-center">
-                            <div class="text-3xl font-bold text-gray-600 mb-2">Rp 0</div>
-                            <div class="text-sm text-gray-500">Terkumpul</div>
+    <main class="container mx-auto px-4 py-12 flex-grow">
+        <section class="max-w-4xl mx-auto -mt-20 relative z-20">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Donation Card -->
+                <div class="md:col-span-2 space-y-8">
+                    <div class="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 border border-emerald-50">
+                        {{if .}}
+                        <div class="flex items-center space-x-4 mb-8">
+                            <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-black text-gray-800 tracking-tight">{{.Data.Name}}</h3>
+                                <p class="text-emerald-600 font-bold text-sm uppercase tracking-widest">Program Donasi Terverifikasi</p>
+                            </div>
                         </div>
-                        <div class="text-center">
-                            <div class="text-3xl font-bold text-emerald-600 mb-2">Rp 5.000.000</div>
-                            <div class="text-sm text-gray-500">33%</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-3xl font-bold text-emerald-600 mb-2">Rp 10.000.000</div>
-                            <div class="text-sm text-gray-500">67%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- Why Donate -->
-        <section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Mengapa Donasi Penting?</h3>
-                <div class="space-y-4">
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center">
-                            <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-2h4v2h4a2 2 0 002 2v3a1 1 0 001-1h-4a1 1 0 011 1z"></path>
-                            </svg>
+                        <div class="prose prose-emerald mb-10 text-gray-600 leading-relaxed">
+                            {{.Data.Description}}
                         </div>
-                        <div class="ml-4">
-                            <h4 class="font-semibold text-gray-800">Biaya Server & Domain</h4>
-                            <p class="text-gray-600">
-                                Setiap tahun, kami membutuhkan biaya untuk server, domain, dan maintenance untuk memastikan aplikasi tetap berjalan lancar.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 6h6v6H6a2 2 0 00-2-2h12a2 2 0 002 2z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <h4 class="font-semibold text-gray-800">Pengembangan & Maintenance</h4>
-                            <p class="text-gray-600">
-                                Donasi digunakan untuk pengembangan fitur baru, perbaikan bug, dan peningkatan performa aplikasi.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                            <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 2h2a2 2 0 002-2h-4a2 2 0 00-2 2v3a1 1 0 001 1h4a1 1 0 011 1zm-1 0h6v6h-6a2 2 0 00-2-2h-4a2 2 0 002-2z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <h4 class="font-semibold text-gray-800">Keberlangsungan</h4>
-                            <p class="text-gray-600">
-                                Aplikasi ini akan terus dikembangkan dan dirawat secara terbuka oleh tim developer. Sumber daya terbuka untuk umat Islam.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- How to Donate -->
-        <section class="bg-white rounded-lg shadow-md p-8">
-            <h3 class="text-xl font-semibold text-gray-800 mb-6">Cara Donasi</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h4 class="font-semibold text-gray-800 mb-3">Transfer Bank</h4>
-                    <div class="space-y-2 text-gray-600">
-                        <p><strong>BCA:</strong> 1234567890 (An. Maulana Rahmat)</p>
-                        <p><strong>Mandiri:</strong> 9876543210 (An. Siti Aminah)</p>
-                        <p><strong>BRI:</strong> 1122334455 (An. Ahmad Fadli)</p>
+                        <!-- Progress Bar (Dynamic) -->
+                        <div class="mb-10">
+                            <div class="flex justify-between items-end mb-3">
+                                <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Dana Terkumpul</span>
+                                <span class="text-lg font-black text-emerald-600">{{formatRupiah .Data.TotalSales}}</span>
+                            </div>
+                            <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-50">
+                                <div class="h-full bg-emerald-500 rounded-full shadow-lg transition-all duration-1000" style="width: 45%;"></div>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-2 italic">* Target operasional tahunan: Rp 15.000.000</p>
+                        </div>
+
+                        <a href="{{.Data.Link}}" target="_blank" class="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-200 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center space-x-3 text-lg">
+                            <span>💝 Donasi Sekarang</span>
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
+                        </a>
+                        {{else}}
+                        <div class="text-center py-10">
+                            <div class="animate-pulse flex flex-col items-center">
+                                <div class="rounded-full bg-gray-200 h-12 w-12 mb-4"></div>
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                            <p class="text-gray-400 mt-4 text-sm font-medium">Memuat data donasi...</p>
+                        </div>
+                        {{end}}
+                    </div>
+
+                    <!-- Transparency Card -->
+                    <div class="bg-white rounded-[2rem] shadow-xl p-8 border border-emerald-50">
+                        <h4 class="text-xl font-black text-gray-800 mb-6 flex items-center">
+                            <span class="w-2 h-6 bg-emerald-500 rounded-full mr-3"></span>
+                            Transparansi Dana
+                        </h4>
+                        <ul class="space-y-4">
+                            <li class="flex items-start space-x-3">
+                                <div class="mt-1 w-5 h-5 bg-emerald-50 text-emerald-600 rounded-md flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                                <p class="text-sm text-gray-600 font-medium leading-relaxed">Penyediaan server berperforma tinggi untuk akses cepat 24/7.</p>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <div class="mt-1 w-5 h-5 bg-emerald-50 text-emerald-600 rounded-md flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                                <p class="text-sm text-gray-600 font-medium leading-relaxed">Pengembangan fitur baru seperti audio hadits dan mode offline.</p>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <div class="mt-1 w-5 h-5 bg-emerald-50 text-emerald-600 rounded-md flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                                <p class="text-sm text-gray-600 font-medium leading-relaxed">Pemeliharaan database hadits agar tetap akurat dan lengkap.</p>
+                            </li>
+                        </ul>
                     </div>
                 </div>
-                
-                <div>
-                    <h4 class="font-semibold text-gray-800 mb-3">E-Wallet</h4>
-                    <div class="space-y-2 text-gray-600">
-                        <p><strong>OVO:</strong> 081234567890</p>
-                        <p><strong>Gopay:</strong> 081234567891</p>
-                        <p><strong>DANA:</strong> 081234567892</p>
-                        <p><strong>ShopeePay:</strong> 081234567893</p>
+
+                <!-- Sidebar Stats -->
+                <div class="space-y-6">
+                    <div class="bg-emerald-600 rounded-[2rem] shadow-xl p-8 text-white">
+                        <h4 class="text-lg font-black mb-6 border-b border-emerald-500 pb-4">Ringkasan</h4>
+                        <div class="space-y-6">
+                            <div>
+                                <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1">Total Donatur</p>
+                                <p class="text-3xl font-black tracking-tighter">{{if .}}{{.Data.TotalOrders}}{{else}}0{{end}}</p>
+                            </div>
+                            <div>
+                                <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1">Metode Pembayaran</p>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    <span class="px-2 py-1 bg-emerald-500 rounded text-[10px] font-bold uppercase tracking-widest border border-emerald-400">QRIS</span>
+                                    <span class="px-2 py-1 bg-emerald-500 rounded text-[10px] font-bold uppercase tracking-widest border border-emerald-400">VA Bank</span>
+                                    <span class="px-2 py-1 bg-emerald-500 rounded text-[10px] font-bold uppercase tracking-widest border border-emerald-400">E-Wallet</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <div class="bg-white rounded-[2rem] shadow-lg p-8 border border-gray-100">
+                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Butuh Bantuan?</h4>
+                        <p class="text-xs text-gray-600 leading-relaxed mb-6">Jika Anda mengalami kendala saat melakukan donasi, hubungi kami melalui:</p>
+                        <a href="mailto:maulana.code@gmail.com" class="text-emerald-600 font-bold hover:underline flex items-center text-sm">
+                            📧 maulana.code@gmail.com
+                        </a>
+                    </div>
+                </div>
             </div>
         </section>
     </main>

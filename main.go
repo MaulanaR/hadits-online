@@ -754,15 +754,24 @@ func main() {
 
 // Donation page handler
 func donateHandler(w http.ResponseWriter, r *http.Request) {
+	mayarData, err := getMayarProductDetail()
+	if err != nil {
+		log.Printf("Error fetching Mayar product: %v", err)
+		// Continue anyway, template will handle nil data
+	}
+
 	tmpl := template.Must(template.New("donate.html").Funcs(template.FuncMap{
 		"add":         add,
 		"add1":        add1,
 		"subtract":    subtract,
 		"multiply":    multiply,
 		"pageNumbers": pageNumbers,
+		"formatRupiah": func(amount float64) string {
+			return fmt.Sprintf("Rp %.0f", amount)
+		},
 	}).ParseFiles("templates/donate.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
-	if err := tmpl.Execute(w, nil); err != nil {
+	if err := tmpl.Execute(w, mayarData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
 }
