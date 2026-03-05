@@ -119,6 +119,7 @@
                 
                 const hadithKey = fav.key;
                 const hadith = fav.data;
+                const formattedID = (hadith.id || "").replace(/\[(.*?)\]/g, '<strong>$1</strong>');
                 
                 return `
                     <div class="bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all border border-gray-100 overflow-hidden group">
@@ -152,7 +153,7 @@
                                 </div>
                                 <div class="indonesian-text text-gray-600 text-base md:text-lg leading-relaxed border-l-4 border-emerald-50 pl-8 py-2">
                                     <span class="font-black text-emerald-700 uppercase text-[10px] tracking-widest block mb-2">Terjemahan</span>
-                                    ${hadith.id}
+                                    ${formattedID}
                                 </div>
                             </div>
                         </div>

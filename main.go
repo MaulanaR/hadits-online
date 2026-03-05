@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -198,6 +199,12 @@ func multiply(a, b int) int {
 	return a * b
 }
 
+func formatHadith(s string) template.HTML {
+	re := regexp.MustCompile(`\[(.*?)\]`)
+	result := re.ReplaceAllString(s, "<strong>$1</strong>")
+	return template.HTML(result)
+}
+
 func pageNumbers(current, total int) []int {
 	var pages []int
 	start := current - 2
@@ -261,11 +268,12 @@ func favoritesHandler(w http.ResponseWriter, r *http.Request) {
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	// Create a template with custom functions
 	funcMap := template.FuncMap{
-		"add":         add,
-		"add1":        add1,
-		"subtract":    subtract,
-		"multiply":    multiply,
-		"pageNumbers": pageNumbers,
+		"add":          add,
+		"add1":         add1,
+		"subtract":     subtract,
+		"multiply":     multiply,
+		"pageNumbers":  pageNumbers,
+		"formatHadith": formatHadith,
 	}
 
 	seo := SEOData{
@@ -367,11 +375,12 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create template with custom functions
 	funcMap := template.FuncMap{
-		"add":         add,
-		"add1":        add1,
-		"subtract":    subtract,
-		"multiply":    multiply,
-		"pageNumbers": pageNumbers,
+		"add":          add,
+		"add1":         add1,
+		"subtract":     subtract,
+		"multiply":     multiply,
+		"pageNumbers":  pageNumbers,
+		"formatHadith": formatHadith,
 	}
 
 	tmpl := template.Must(template.New("collection.html").Funcs(funcMap).ParseFiles("templates/collection.html", "templates/components/navbar.html", "templates/components/footer.html"))
@@ -456,11 +465,12 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create template with custom functions
 	funcMap := template.FuncMap{
-		"add":         add,
-		"add1":        add1,
-		"subtract":    subtract,
-		"multiply":    multiply,
-		"pageNumbers": pageNumbers,
+		"add":          add,
+		"add1":         add1,
+		"subtract":     subtract,
+		"multiply":     multiply,
+		"pageNumbers":  pageNumbers,
+		"formatHadith": formatHadith,
 	}
 
 	tmpl := template.Must(template.New("hadith.html").Funcs(funcMap).ParseFiles("templates/hadith.html", "templates/components/navbar.html", "templates/components/footer.html"))
@@ -555,11 +565,12 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create template with custom functions
 	funcMap := template.FuncMap{
-		"add":         add,
-		"add1":        add1,
-		"subtract":    subtract,
-		"multiply":    multiply,
-		"pageNumbers": pageNumbers,
+		"add":          add,
+		"add1":         add1,
+		"subtract":     subtract,
+		"multiply":     multiply,
+		"pageNumbers":  pageNumbers,
+		"formatHadith": formatHadith,
 		"urlEncode": func(s string) string {
 			result := strings.ReplaceAll(s, " ", "+")
 			result = strings.ReplaceAll(result, "&", "%26")
