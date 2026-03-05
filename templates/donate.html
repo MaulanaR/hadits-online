@@ -58,7 +58,7 @@
                                 <span class="text-lg font-black text-emerald-600">{{formatRupiah .Data.TotalSales}}</span>
                             </div>
                             <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-50">
-                                <div class="h-full bg-emerald-500 rounded-full shadow-lg transition-all duration-1000" style="width: 45%;"></div>
+                                <div class="h-full bg-emerald-500 rounded-full shadow-lg transition-all duration-1000" style="width: {{calculatePercentage .Data.TotalSales 15000000}}%;"></div>
                             </div>
                             <p class="text-[10px] text-gray-400 mt-2 italic">* Target operasional tahunan: Rp 15.000.000</p>
                         </div>

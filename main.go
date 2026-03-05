@@ -835,6 +835,16 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 		"formatRupiah": func(amount float64) string {
 			return fmt.Sprintf("Rp %.0f", amount)
 		},
+		"calculatePercentage": func(current float64, target float64) float64 {
+			if target <= 0 {
+				return 0
+			}
+			percent := (current / target) * 100
+			if percent > 100 {
+				return 100
+			}
+			return percent
+		},
 	}).ParseFiles("templates/donate.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
 	if err := tmpl.Execute(w, mayarData); err != nil {
