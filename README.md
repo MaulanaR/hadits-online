@@ -1,4 +1,4 @@
-# Hadits Online - Hadits.online Clone (Enhanced with Advanced Filtering)
+# Hadits Online 
 
 A comprehensive web application that clones and enhances Hadits.online functionality, providing access to hadith collections from various Islamic books. Built with Go and TailwindCSS with modern features, excellent user experience, and **advanced filtering capabilities**.
 
