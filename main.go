@@ -97,7 +97,7 @@ var (
 	tmpl           *template.Template
 	mayarApiKey    string
 	mayarProductId string
-	groqApiKey     string
+	geminiApiKey   string
 )
 
 const (
@@ -110,7 +110,7 @@ func init() {
 	}
 	mayarApiKey = os.Getenv("MAYAR_API_KEY")
 	mayarProductId = os.Getenv("MAYAR_PRODUCT_ID")
-	groqApiKey = os.Getenv("GROQ_API_KEY")
+	geminiApiKey = os.Getenv("GEMINI_API_KEY")
 }
 
 func getMayarProductDetail() (*MayarProductResponse, error) {
@@ -957,26 +957,27 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8082", r))
 }
 
-type GroqMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+type GeminiPart struct {
+	Text string `json:"text"`
 }
 
-type GroqRequest struct {
-	Model    string        `json:"model"`
-	Messages []GroqMessage `json:"messages"`
+type GeminiContent struct {
+	Parts []GeminiPart `json:"parts"`
 }
 
-type GroqResponse struct {
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
+type GeminiRequest struct {
+	Contents          []GeminiContent `json:"contents"`
+	SystemInstruction GeminiContent   `json:"system_instruction,omitempty"`
+}
+
+type GeminiResponse struct {
+	Candidates []struct {
+		Content GeminiContent `json:"content"`
+	} `json:"candidates"`
 }
 
 func explainHandler(w http.ResponseWriter, r *http.Request) {
-	if groqApiKey == "" {
+	if geminiApiKey == "" {
 		http.Error(w, "AI configuration missing", http.StatusServiceUnavailable)
 		return
 	}
@@ -1065,40 +1066,47 @@ Guiding Principles:
 - Tetap bersandar pada literatur klasik (Turats) dan pendapat ulama otoritatif.
 - Gunakan Markdown untuk struktur yang rapi.`
 
-	userPrompt := fmt.Sprintf("Kitab: %s\nNomor: %d \n\nArab:\n%s\n\nTerjemahan:\n%s",
-		collectionName, hadith.Number, hadith.Arab, hadith.ID)
+	userPrompt := fmt.Sprintf("Kitab: %s\nNomor: %d \n\nArab:\n%s",
+		collectionName, hadith.Number, hadith.Arab)
 
-	groqReq := GroqRequest{
-		Model: "llama-3.3-70b-versatile",
-		Messages: []GroqMessage{
-			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+	geminiReq := GeminiRequest{
+		Contents: []GeminiContent{
+			{Parts: []GeminiPart{{Text: userPrompt}}},
+		},
+		SystemInstruction: GeminiContent{
+			Parts: []GeminiPart{{Text: systemPrompt}},
 		},
 	}
 
-	jsonData, _ := json.Marshal(groqReq)
-	req, _ := http.NewRequest("POST", "https://api.groq.com/openai/v1/chat/completions", strings.NewReader(string(jsonData)))
-	req.Header.Add("Authorization", "Bearer "+groqApiKey)
+	jsonData, _ := json.Marshal(geminiReq)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent")
+	req, _ := http.NewRequest("POST", url, strings.NewReader(string(jsonData)))
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("x-goog-api-key", geminiApiKey)
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 3 * time.Minute}
 	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(w, "Error calling AI API", http.StatusInternalServerError)
 		return
 	}
+	fmt.Println(resp)
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	var groqResp GroqResponse
-	json.Unmarshal(body, &groqResp)
+	var geminiResp GeminiResponse
+	if err := json.Unmarshal(body, &geminiResp); err != nil {
+		log.Printf("Gemini parsing error: %v, Body: %s", err, string(body))
+		http.Error(w, "Error parsing AI response", http.StatusInternalServerError)
+		return
+	}
 
-	if len(groqResp.Choices) == 0 {
+	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
 		http.Error(w, "No response from AI", http.StatusInternalServerError)
 		return
 	}
 
-	explanation := groqResp.Choices[0].Message.Content
+	explanation := geminiResp.Candidates[0].Content.Parts[0].Text
 
 	// Update in-memory data and save to file
 	data.mu.Lock()
