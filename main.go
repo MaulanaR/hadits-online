@@ -36,6 +36,15 @@ type HadithData struct {
 	Collections map[string][]Collection
 	Info        []CollectionInfo
 	mu          sync.RWMutex
+	// Search index for faster lookups
+	searchIndex map[string][]IndexEntry
+}
+
+type IndexEntry struct {
+	Slug     string
+	Index    int
+	ArabText string
+	IDText   string
 }
 
 type Pagination struct {
@@ -152,6 +161,7 @@ func getMayarProductDetail() (*MayarProductResponse, error) {
 func loadData() {
 	data = &HadithData{
 		Collections: make(map[string][]Collection),
+		searchIndex: make(map[string][]IndexEntry),
 	}
 
 	// Load collection list
@@ -164,7 +174,7 @@ func loadData() {
 		log.Fatal("Error parsing list.json:", err)
 	}
 
-	// Load all collections
+	// Load all collections and build search index
 	for _, info := range data.Info {
 		filename := "resource/" + info.Slug + ".json"
 		collectionData, err := ioutil.ReadFile(filename)
@@ -181,8 +191,56 @@ func loadData() {
 		}
 
 		data.Collections[info.Slug] = collection
+
+		// Build search index for this collection
+		for i, hadith := range collection {
+			// Extract searchable terms (words longer than 2 chars)
+			arabWords := extractSearchTerms(strings.ToLower(hadith.Arab))
+			idWords := extractSearchTerms(strings.ToLower(hadith.ID))
+
+			// Index each word
+			for _, word := range arabWords {
+				data.searchIndex[word] = append(data.searchIndex[word], IndexEntry{
+					Slug:     info.Slug,
+					Index:    i,
+					ArabText: strings.ToLower(hadith.Arab),
+					IDText:   strings.ToLower(hadith.ID),
+				})
+			}
+
+			for _, word := range idWords {
+				data.searchIndex[word] = append(data.searchIndex[word], IndexEntry{
+					Slug:     info.Slug,
+					Index:    i,
+					ArabText: strings.ToLower(hadith.Arab),
+					IDText:   strings.ToLower(hadith.ID),
+				})
+			}
+		}
+
 		log.Printf("Loaded %d hadith from %s", len(collection), info.Name)
 	}
+
+	log.Printf("Search index built with %d unique terms", len(data.searchIndex))
+}
+
+// Helper function to extract search terms from text
+func extractSearchTerms(text string) []string {
+	words := strings.Fields(text)
+	var searchTerms []string
+	seen := make(map[string]bool)
+
+	for _, word := range words {
+		// Filter out very short words and duplicates
+		if len(word) > 2 && !seen[word] {
+			// Remove common Arabic/Indonesian stop words if needed
+			// For now, just include words longer than 2 chars
+			searchTerms = append(searchTerms, word)
+			seen[word] = true
+		}
+	}
+
+	return searchTerms
 }
 
 // Template functions
@@ -695,22 +753,16 @@ func parseSearchFilters(r *http.Request) SearchFilters {
 	return filters
 }
 
-func calculateRelevanceScore(hadith Collection, query string) int {
+func calculateRelevanceScore(arabText, idText string, query string, queryWords []string) int {
 	score := 0
-	query = strings.ToLower(query)
 
-	// Check Arabic text
-	arabText := strings.ToLower(hadith.Arab)
-	idText := strings.ToLower(hadith.ID)
-
-	// Exact match gets highest score
+	// Exact match gets highest score (only check once)
 	if strings.Contains(arabText, query) || strings.Contains(idText, query) {
 		score += 100
 	}
 
-	// Check for partial matches
-	words := strings.Fields(query)
-	for _, word := range words {
+	// Check for partial matches (optimized with pre-split words)
+	for _, word := range queryWords {
 		if len(word) > 2 {
 			if strings.Contains(arabText, word) {
 				score += 20
@@ -721,12 +773,12 @@ func calculateRelevanceScore(hadith Collection, query string) int {
 		}
 	}
 
-	// Boost score if query is in ID (Indonesian translation)
+	// Boost score if query is in ID (Indonesian translation) - combined with above
 	if strings.Contains(idText, query) {
 		score += 30
 	}
 
-	// Boost score if query is in Arabic
+	// Boost score if query is in Arabic - combined with above
 	if strings.Contains(arabText, query) {
 		score += 25
 	}
@@ -734,8 +786,8 @@ func calculateRelevanceScore(hadith Collection, query string) int {
 	return score
 }
 
-func matchesFilter(hadith Collection, slug string, filters SearchFilters) bool {
-	// Collection filter
+func matchesFilter(arabText, idText string, hadithNumber int, slug string, filters SearchFilters, query string, queryWords []string) bool {
+	// Collection filter (early exit)
 	if len(filters.Collections) > 0 {
 		found := false
 		for _, col := range filters.Collections {
@@ -749,30 +801,38 @@ func matchesFilter(hadith Collection, slug string, filters SearchFilters) bool {
 		}
 	}
 
-	// Query match check
+	// Query match check - optimized with pre-lowered text and query
 	queryMatched := false
-	lowerArab := strings.ToLower(hadith.Arab)
-	lowerID := strings.ToLower(hadith.ID)
-	lowerQuery := strings.ToLower(filters.Query)
-
 	if filters.Language == "ar" {
-		queryMatched = strings.Contains(lowerArab, lowerQuery)
+		queryMatched = strings.Contains(arabText, query)
 	} else if filters.Language == "id" {
-		queryMatched = strings.Contains(lowerID, lowerQuery)
+		queryMatched = strings.Contains(idText, query)
 	} else {
 		// Default "all" or anything else: check both
-		queryMatched = strings.Contains(lowerArab, lowerQuery) || strings.Contains(lowerID, lowerQuery)
+		queryMatched = strings.Contains(arabText, query) || strings.Contains(idText, query)
+	}
+
+	// Also check individual words for better matching (word-level search)
+	if !queryMatched && len(queryWords) > 0 {
+		for _, word := range queryWords {
+			if len(word) > 2 {
+				if strings.Contains(arabText, word) || strings.Contains(idText, word) {
+					queryMatched = true
+					break
+				}
+			}
+		}
 	}
 
 	if !queryMatched {
 		return false
 	}
 
-	// Number range filter
-	if filters.NumberRange.Min > 0 && hadith.Number < filters.NumberRange.Min {
+	// Number range filter (early exit)
+	if filters.NumberRange.Min > 0 && hadithNumber < filters.NumberRange.Min {
 		return false
 	}
-	if filters.NumberRange.Max > 0 && hadith.Number > filters.NumberRange.Max {
+	if filters.NumberRange.Max > 0 && hadithNumber > filters.NumberRange.Max {
 		return false
 	}
 
@@ -801,14 +861,125 @@ func sortResults(results []SearchResult, sortBy string) {
 	}
 }
 
-func performAdvancedSearch(filters SearchFilters) []SearchResult {
-	var allResults []SearchResult
+// Index-based search for faster lookups
+func performIndexSearch(filters SearchFilters) []SearchResult {
+	lowerQuery := strings.ToLower(filters.Query)
+	queryWords := strings.Fields(lowerQuery)
+
+	// If query is too short, fall back to full scan
+	if len(lowerQuery) < 3 && len(queryWords) == 0 {
+		return performAdvancedSearch(filters)
+	}
+
+	// Use a map to avoid duplicate results
+	seenResult := make(map[string]bool)
+
+	// Pre-allocate results slice
+	estimatedResults := 100
+	allResults := make([]SearchResult, 0, estimatedResults)
 
 	data.mu.RLock()
 	defer data.mu.RUnlock()
 
+	// Pre-build collection name map
+	collectionNameMap := make(map[string]string)
+	for _, info := range data.Info {
+		collectionNameMap[info.Slug] = info.Name
+	}
+
+	// Find all entries matching query words from index
+	var matchingEntries []IndexEntry
+	if len(queryWords) > 0 {
+		// Multi-word search: find entries that match ALL query words
+		for _, word := range queryWords {
+			if len(word) > 2 {
+				entries := data.searchIndex[word]
+				if entries == nil {
+					// Word not found in index, no results
+					return []SearchResult{}
+				}
+				matchingEntries = append(matchingEntries, entries...)
+			}
+		}
+	} else {
+		// Single word search
+		matchingEntries = data.searchIndex[lowerQuery]
+	}
+
+	// Process matching entries
+	for _, entry := range matchingEntries {
+		resultKey := fmt.Sprintf("%s-%d", entry.Slug, entry.Index)
+		if seenResult[resultKey] {
+			continue
+		}
+
+		// Get actual hadith from collection
+		collection := data.Collections[entry.Slug]
+		if entry.Index >= len(collection) {
+			continue
+		}
+
+		hadith := collection[entry.Index]
+
+		// Verify it matches all filters
+		if matchesFilter(entry.ArabText, entry.IDText, hadith.Number, entry.Slug, filters, lowerQuery, queryWords) {
+			// Calculate relevance score
+			score := calculateRelevanceScore(entry.ArabText, entry.IDText, lowerQuery, queryWords)
+
+			// Get context around match
+			context := hadith.ID
+			if len(context) > 500 {
+				context = context[:500] + "..."
+			}
+
+			allResults = append(allResults, SearchResult{
+				Collection: collectionNameMap[entry.Slug],
+				Slug:       entry.Slug,
+				Hadith:     hadith,
+				Context:    context,
+				Score:      score,
+			})
+
+			seenResult[resultKey] = true
+		}
+	}
+
+	// Sort results based on preference
+	if len(allResults) > 0 {
+		sortResults(allResults, filters.SortBy)
+	}
+
+	return allResults
+}
+
+func performAdvancedSearch(filters SearchFilters) []SearchResult {
+	// Try index-based search first for better performance
+	results := performIndexSearch(filters)
+	if len(results) > 0 || len(strings.ToLower(filters.Query)) >= 3 {
+		return results
+	}
+
+	// Fall back to full scan for very short queries
+	// Pre-compute query processing to avoid repeated operations
+	lowerQuery := strings.ToLower(filters.Query)
+	queryWords := strings.Fields(lowerQuery)
+
+	// Pre-allocate results slice with estimated capacity to reduce allocations
+	// Assuming average of 50-100 results per search
+	estimatedResults := 100
+	allResults := make([]SearchResult, 0, estimatedResults)
+
+	data.mu.RLock()
+	defer data.mu.RUnlock()
+
+	// Pre-build collection name map for faster lookup
+	collectionNameMap := make(map[string]string)
+	for _, info := range data.Info {
+		collectionNameMap[info.Slug] = info.Name
+	}
+
 	for slug, collection := range data.Collections {
-		// Skip if collection filter is set and doesn't match
+		// Skip if collection filter is set and doesn't match (early exit)
 		if len(filters.Collections) > 0 {
 			found := false
 			for _, col := range filters.Collections {
@@ -822,24 +993,27 @@ func performAdvancedSearch(filters SearchFilters) []SearchResult {
 			}
 		}
 
-		// Get collection name
-		collectionName := slug
-		for _, info := range data.Info {
-			if info.Slug == slug {
-				collectionName = info.Name
-				break
-			}
+		// Get collection name from pre-built map
+		collectionName := collectionNameMap[slug]
+		if collectionName == "" {
+			collectionName = slug
 		}
 
+		// Iterate through hadiths with pre-lowered text
 		for _, hadith := range collection {
-			if matchesFilter(hadith, slug, filters) {
-				// Calculate relevance score
-				score := calculateRelevanceScore(hadith, filters.Query)
+			// Pre-lower texts once
+			lowerArab := strings.ToLower(hadith.Arab)
+			lowerID := strings.ToLower(hadith.ID)
 
-				// Get context around match
+			// Check if hadith matches filters (with pre-computed values)
+			if matchesFilter(lowerArab, lowerID, hadith.Number, slug, filters, lowerQuery, queryWords) {
+				// Calculate relevance score with pre-lowered texts
+				score := calculateRelevanceScore(lowerArab, lowerID, lowerQuery, queryWords)
+
+				// Get context around match (optimized length check)
 				context := hadith.ID
-				if len(context) > 300 {
-					context = context[:300] + "..."
+				if len(context) > 500 {
+					context = context[:500] + "..."
 				}
 
 				allResults = append(allResults, SearchResult{
@@ -853,8 +1027,10 @@ func performAdvancedSearch(filters SearchFilters) []SearchResult {
 		}
 	}
 
-	// Sort results based on preference
-	sortResults(allResults, filters.SortBy)
+	// Sort results based on preference (only if we have results)
+	if len(allResults) > 0 {
+		sortResults(allResults, filters.SortBy)
+	}
 
 	return allResults
 }
