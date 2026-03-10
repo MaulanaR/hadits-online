@@ -33,18 +33,9 @@ type CollectionInfo struct {
 }
 
 type HadithData struct {
-	Collections map[string][]Collection
-	Info        []CollectionInfo
-	mu          sync.RWMutex
-	// Search index for faster lookups
-	searchIndex map[string][]IndexEntry
-}
-
-type IndexEntry struct {
-	Slug     string
-	Index    int
-	ArabText string
-	IDText   string
+	// Only keep collection info in memory (very small ~10KB)
+	Info []CollectionInfo
+	mu   sync.RWMutex
 }
 
 type Pagination struct {
@@ -160,11 +151,10 @@ func getMayarProductDetail() (*MayarProductResponse, error) {
 
 func loadData() {
 	data = &HadithData{
-		Collections: make(map[string][]Collection),
-		searchIndex: make(map[string][]IndexEntry),
+		Info: []CollectionInfo{},
 	}
 
-	// Load collection list
+	// Load only collection list (very small ~10KB)
 	listData, err := ioutil.ReadFile("resource/list.json")
 	if err != nil {
 		log.Fatal("Error loading list.json:", err)
@@ -174,73 +164,34 @@ func loadData() {
 		log.Fatal("Error parsing list.json:", err)
 	}
 
-	// Load all collections and build search index
-	for _, info := range data.Info {
-		filename := "resource/" + info.Slug + ".json"
-		collectionData, err := ioutil.ReadFile(filename)
-		if err != nil {
-			log.Printf("Error loading %s: %v", filename, err)
-			continue
-		}
-
-		var collection []Collection
-		err = json.Unmarshal(collectionData, &collection)
-		if err != nil {
-			log.Printf("Error parsing %s: %v", filename, err)
-			continue
-		}
-
-		data.Collections[info.Slug] = collection
-
-		// Build search index for this collection
-		for i, hadith := range collection {
-			// Extract searchable terms (words longer than 2 chars)
-			arabWords := extractSearchTerms(strings.ToLower(hadith.Arab))
-			idWords := extractSearchTerms(strings.ToLower(hadith.ID))
-
-			// Index each word
-			for _, word := range arabWords {
-				data.searchIndex[word] = append(data.searchIndex[word], IndexEntry{
-					Slug:     info.Slug,
-					Index:    i,
-					ArabText: strings.ToLower(hadith.Arab),
-					IDText:   strings.ToLower(hadith.ID),
-				})
-			}
-
-			for _, word := range idWords {
-				data.searchIndex[word] = append(data.searchIndex[word], IndexEntry{
-					Slug:     info.Slug,
-					Index:    i,
-					ArabText: strings.ToLower(hadith.Arab),
-					IDText:   strings.ToLower(hadith.ID),
-				})
-			}
-		}
-
-		log.Printf("Loaded %d hadith from %s", len(collection), info.Name)
-	}
-
-	log.Printf("Search index built with %d unique terms", len(data.searchIndex))
+	log.Printf("Loaded %d collection info (disk-based mode - very low memory usage)", len(data.Info))
 }
 
-// Helper function to extract search terms from text
-func extractSearchTerms(text string) []string {
-	words := strings.Fields(text)
-	var searchTerms []string
-	seen := make(map[string]bool)
-
-	for _, word := range words {
-		// Filter out very short words and duplicates
-		if len(word) > 2 && !seen[word] {
-			// Remove common Arabic/Indonesian stop words if needed
-			// For now, just include words longer than 2 chars
-			searchTerms = append(searchTerms, word)
-			seen[word] = true
-		}
+// Load a single collection from disk on-demand
+func loadCollection(slug string) ([]Collection, error) {
+	filename := "resource/" + slug + ".json"
+	collectionData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error loading %s: %v", filename, err)
 	}
 
-	return searchTerms
+	var collection []Collection
+	err = json.Unmarshal(collectionData, &collection)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing %s: %v", filename, err)
+	}
+
+	return collection, nil
+}
+
+// Get collection info by slug
+func getCollectionInfo(slug string) *CollectionInfo {
+	for _, info := range data.Info {
+		if info.Slug == slug {
+			return &info
+		}
+	}
+	return nil
 }
 
 // Template functions
@@ -360,35 +311,26 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slug := vars["slug"]
 
+	// Get collection info
+	info := getCollectionInfo(slug)
+	if info == nil {
+		http.Error(w, "Collection not found", http.StatusNotFound)
+		return
+	}
+
+	// Load collection from disk on-demand
+	collection, err := loadCollection(slug)
+	if err != nil {
+		http.Error(w, "Error loading collection: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// Get pagination parameters
 	page := 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
 			page = p
 		}
-	}
-
-	data.mu.RLock()
-	collection, exists := data.Collections[slug]
-	data.mu.RUnlock()
-
-	if !exists {
-		http.Error(w, "Collection not found", http.StatusNotFound)
-		return
-	}
-
-	// Get collection info
-	var info *CollectionInfo
-	for _, i := range data.Info {
-		if i.Slug == slug {
-			info = &i
-			break
-		}
-	}
-
-	if info == nil {
-		http.Error(w, "Collection info not found", http.StatusNotFound)
-		return
 	}
 
 	// Calculate pagination
@@ -455,12 +397,10 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 	slug := vars["slug"]
 	numberStr := vars["number"]
 
-	data.mu.RLock()
-	collection, exists := data.Collections[slug]
-	data.mu.RUnlock()
-
-	if !exists {
-		http.Error(w, "Collection not found", http.StatusNotFound)
+	// Load collection from disk on-demand
+	collection, err := loadCollection(slug)
+	if err != nil {
+		http.Error(w, "Error loading collection: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -486,13 +426,11 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get collection info and find previous/next
-	var info *CollectionInfo
-	for _, i := range data.Info {
-		if i.Slug == slug {
-			info = &i
-			break
-		}
+	// Get collection info
+	info := getCollectionInfo(slug)
+	if info == nil {
+		http.Error(w, "Collection info not found", http.StatusNotFound)
+		return
 	}
 
 	var prevHadith, nextHadith *Collection
@@ -861,173 +799,83 @@ func sortResults(results []SearchResult, sortBy string) {
 	}
 }
 
-// Index-based search for faster lookups
-func performIndexSearch(filters SearchFilters) []SearchResult {
-	lowerQuery := strings.ToLower(filters.Query)
-	queryWords := strings.Fields(lowerQuery)
-
-	// If query is too short, fall back to full scan
-	if len(lowerQuery) < 3 && len(queryWords) == 0 {
-		return performAdvancedSearch(filters)
-	}
-
-	// Use a map to avoid duplicate results
-	seenResult := make(map[string]bool)
-
-	// Pre-allocate results slice
-	estimatedResults := 100
-	allResults := make([]SearchResult, 0, estimatedResults)
-
-	data.mu.RLock()
-	defer data.mu.RUnlock()
-
-	// Pre-build collection name map
-	collectionNameMap := make(map[string]string)
-	for _, info := range data.Info {
-		collectionNameMap[info.Slug] = info.Name
-	}
-
-	// Find all entries matching query words from index
-	var matchingEntries []IndexEntry
-	if len(queryWords) > 0 {
-		// Multi-word search: find entries that match ALL query words
-		for _, word := range queryWords {
-			if len(word) > 2 {
-				entries := data.searchIndex[word]
-				if entries == nil {
-					// Word not found in index, no results
-					return []SearchResult{}
-				}
-				matchingEntries = append(matchingEntries, entries...)
-			}
-		}
-	} else {
-		// Single word search
-		matchingEntries = data.searchIndex[lowerQuery]
-	}
-
-	// Process matching entries
-	for _, entry := range matchingEntries {
-		resultKey := fmt.Sprintf("%s-%d", entry.Slug, entry.Index)
-		if seenResult[resultKey] {
-			continue
-		}
-
-		// Get actual hadith from collection
-		collection := data.Collections[entry.Slug]
-		if entry.Index >= len(collection) {
-			continue
-		}
-
-		hadith := collection[entry.Index]
-
-		// Verify it matches all filters
-		if matchesFilter(entry.ArabText, entry.IDText, hadith.Number, entry.Slug, filters, lowerQuery, queryWords) {
-			// Calculate relevance score
-			score := calculateRelevanceScore(entry.ArabText, entry.IDText, lowerQuery, queryWords)
-
-			// Get context around match
-			context := hadith.ID
-			if len(context) > 500 {
-				context = context[:500] + "..."
-			}
-
-			allResults = append(allResults, SearchResult{
-				Collection: collectionNameMap[entry.Slug],
-				Slug:       entry.Slug,
-				Hadith:     hadith,
-				Context:    context,
-				Score:      score,
-			})
-
-			seenResult[resultKey] = true
-		}
-	}
-
-	// Sort results based on preference
-	if len(allResults) > 0 {
-		sortResults(allResults, filters.SortBy)
-	}
-
-	return allResults
-}
-
+// Disk-based search - loads collections from disk on-demand (minimal memory usage)
 func performAdvancedSearch(filters SearchFilters) []SearchResult {
-	// Try index-based search first for better performance
-	results := performIndexSearch(filters)
-	if len(results) > 0 || len(strings.ToLower(filters.Query)) >= 3 {
-		return results
-	}
-
-	// Fall back to full scan for very short queries
-	// Pre-compute query processing to avoid repeated operations
 	lowerQuery := strings.ToLower(filters.Query)
 	queryWords := strings.Fields(lowerQuery)
 
-	// Pre-allocate results slice with estimated capacity to reduce allocations
-	// Assuming average of 50-100 results per search
-	estimatedResults := 100
-	allResults := make([]SearchResult, 0, estimatedResults)
+	// Pre-allocate results slice with memory limit
+	maxResults := 500
+	allResults := make([]SearchResult, 0, 100)
 
 	data.mu.RLock()
 	defer data.mu.RUnlock()
 
-	// Pre-build collection name map for faster lookup
-	collectionNameMap := make(map[string]string)
-	for _, info := range data.Info {
-		collectionNameMap[info.Slug] = info.Name
-	}
-
-	for slug, collection := range data.Collections {
-		// Skip if collection filter is set and doesn't match (early exit)
-		if len(filters.Collections) > 0 {
-			found := false
-			for _, col := range filters.Collections {
-				if strings.EqualFold(col, slug) {
-					found = true
+	// Get collections to search (based on filter)
+	var collectionsToSearch []CollectionInfo
+	if len(filters.Collections) > 0 {
+		// Filter collections
+		for _, col := range filters.Collections {
+			for _, info := range data.Info {
+				if strings.EqualFold(col, info.Slug) {
+					collectionsToSearch = append(collectionsToSearch, info)
 					break
 				}
 			}
-			if !found {
-				continue
-			}
+		}
+	} else {
+		// Search all collections
+		collectionsToSearch = data.Info
+	}
+
+	// Search each collection (disk-based)
+	for _, info := range collectionsToSearch {
+		// Load collection from disk on-demand
+		collection, err := loadCollection(info.Slug)
+		if err != nil {
+			log.Printf("Error loading collection %s: %v", info.Slug, err)
+			continue
 		}
 
-		// Get collection name from pre-built map
-		collectionName := collectionNameMap[slug]
-		if collectionName == "" {
-			collectionName = slug
-		}
-
-		// Iterate through hadiths with pre-lowered text
+		// Search within this collection
 		for _, hadith := range collection {
-			// Pre-lower texts once
+			// Limit results
+			if len(allResults) >= maxResults {
+				break
+			}
+
+			// Pre-lower texts
 			lowerArab := strings.ToLower(hadith.Arab)
 			lowerID := strings.ToLower(hadith.ID)
 
-			// Check if hadith matches filters (with pre-computed values)
-			if matchesFilter(lowerArab, lowerID, hadith.Number, slug, filters, lowerQuery, queryWords) {
-				// Calculate relevance score with pre-lowered texts
+			// Check if matches filters
+			if matchesFilter(lowerArab, lowerID, hadith.Number, info.Slug, filters, lowerQuery, queryWords) {
+				// Calculate score
 				score := calculateRelevanceScore(lowerArab, lowerID, lowerQuery, queryWords)
 
-				// Get context around match (optimized length check)
+				// Get context
 				context := hadith.ID
-				if len(context) > 500 {
-					context = context[:500] + "..."
+				if len(context) > 300 {
+					context = context[:300] + "..."
 				}
 
 				allResults = append(allResults, SearchResult{
-					Collection: collectionName,
-					Slug:       slug,
+					Collection: info.Name,
+					Slug:       info.Slug,
 					Hadith:     hadith,
 					Context:    context,
 					Score:      score,
 				})
 			}
 		}
+
+		// Early exit if we have enough results
+		if len(allResults) >= maxResults {
+			break
+		}
 	}
 
-	// Sort results based on preference (only if we have results)
+	// Sort results
 	if len(allResults) > 0 {
 		sortResults(allResults, filters.SortBy)
 	}
@@ -1063,14 +911,25 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	sb.WriteString("  <url>\n    <loc>https://hadits.online/donate</loc>\n    <priority>0.5</priority>\n  </url>\n")
 	sb.WriteString("  <url>\n    <loc>https://hadits.online/faq</loc>\n    <priority>0.5</priority>\n  </url>\n")
 
-	// Collections
+	// Collections (disk-based - load each collection individually)
 	data.mu.RLock()
 	for _, info := range data.Info {
 		sb.WriteString(fmt.Sprintf("  <url>\n    <loc>https://hadits.online/collection/%s</loc>\n    <priority>0.8</priority>\n  </url>\n", info.Slug))
 
-		// Individual Hadiths (limited to first 100 for sitemap size, or all if preferred)
-		// For true SEO, we want all, but sitemaps have limits. Let's do all for now as it's not THAT many.
-		for _, h := range data.Collections[info.Slug] {
+		// Load collection for individual hadith URLs
+		collection, err := loadCollection(info.Slug)
+		if err != nil {
+			log.Printf("Error loading collection %s for sitemap: %v", info.Slug, err)
+			continue
+		}
+
+		// Individual Hadiths (limited to first 100 to keep sitemap small and fast)
+		// You can increase this if needed, but for disk-based mode, limiting is better
+		limit := 100
+		for i, h := range collection {
+			if i >= limit {
+				break
+			}
 			sb.WriteString(fmt.Sprintf("  <url>\n    <loc>https://hadits.online/collection/%s/%d</loc>\n    <priority>0.6</priority>\n  </url>\n", info.Slug, h.Number))
 		}
 	}
@@ -1168,19 +1027,17 @@ func explainHandler(w http.ResponseWriter, r *http.Request) {
 
 	number, _ := strconv.Atoi(numberStr)
 
-	data.mu.RLock()
-	collection, exists := data.Collections[slug]
-	data.mu.RUnlock()
-
-	if !exists {
-		http.Error(w, "Collection not found", http.StatusNotFound)
+	// Load collection from disk on-demand
+	collection, err := loadCollection(slug)
+	if err != nil {
+		http.Error(w, "Error loading collection: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	var hadith *Collection
-	for _, h := range collection {
+	for i, h := range collection {
 		if h.Number == number {
-			hadith = &h
+			hadith = &collection[i]
 			break
 		}
 	}
@@ -1201,11 +1058,9 @@ func explainHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get collection name
 	collectionName := slug
-	for _, info := range data.Info {
-		if info.Slug == slug {
-			collectionName = info.Name
-			break
-		}
+	info := getCollectionInfo(slug)
+	if info != nil {
+		collectionName = info.Name
 	}
 
 	systemPrompt := `Role: Anda adalah seorang Ahli Ilmu Hadis dan Syarah (Penjelas) Hadis Digital yang akurat, objektif, dan mendalam.
@@ -1284,32 +1139,31 @@ Guiding Principles:
 
 	explanation := geminiResp.Candidates[0].Content.Parts[0].Text
 
-	// Update in-memory data and save to file
-	data.mu.Lock()
-	var updatedCollection []Collection
-	for i := range data.Collections[slug] {
-		if data.Collections[slug][i].Number == number {
-			data.Collections[slug][i].Explanation = explanation
-			break
+	// Save explanation to disk (disk-based approach)
+	updatedCollection, err := loadCollection(slug)
+	if err != nil {
+		log.Printf("Error reloading collection for update: %v", err)
+	} else {
+		// Find and update the hadith
+		for i := range updatedCollection {
+			if updatedCollection[i].Number == number {
+				updatedCollection[i].Explanation = explanation
+				break
+			}
+		}
+
+		// Save updated collection to disk
+		filename := "resource/" + slug + ".json"
+		jsonData, err := json.MarshalIndent(updatedCollection, "", "  ")
+		if err != nil {
+			log.Printf("Error marshaling collection %s for caching: %v", slug, err)
+		} else {
+			err = ioutil.WriteFile(filename, jsonData, 0644)
+			if err != nil {
+				log.Printf("Error writing cache to %s: %v", filename, err)
+			}
 		}
 	}
-	// Create a deep copy of the collection slice for thread-safe file writing
-	updatedCollection = make([]Collection, len(data.Collections[slug]))
-	copy(updatedCollection, data.Collections[slug])
-	data.mu.Unlock()
-
-	go func(s string, coll []Collection) {
-		filename := "resource/" + s + ".json"
-		jsonData, err := json.MarshalIndent(coll, "", "  ")
-		if err != nil {
-			log.Printf("Error marshaling collection %s for caching: %v", s, err)
-			return
-		}
-		err = ioutil.WriteFile(filename, jsonData, 0644)
-		if err != nil {
-			log.Printf("Error writing cache to %s: %v", filename, err)
-		}
-	}(slug, updatedCollection)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
