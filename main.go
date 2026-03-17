@@ -17,6 +17,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	midtrans "github.com/midtrans/midtrans-go"
+	"github.com/midtrans/midtrans-go/snap"
 )
 
 type Collection struct {
@@ -77,27 +79,13 @@ type FilteredResults struct {
 	Collections []CollectionInfo
 }
 
-type MayarProductResponse struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-	Data    struct {
-		ID          string  `json:"id"`
-		Name        string  `json:"name"`
-		Description string  `json:"description"`
-		Amount      float64 `json:"amount"`
-		Link        string  `json:"link"`
-		Image       string  `json:"image"`
-		TotalSales  float64 `json:"totalSales"`
-		TotalOrders int     `json:"totalOrders"`
-	} `json:"data"`
-}
-
 var (
-	data           *HadithData
-	tmpl           *template.Template
-	mayarApiKey    string
-	mayarProductId string
-	geminiApiKey   string
+	data              *HadithData
+	tmpl              *template.Template
+	geminiApiKey      string
+	midtransServerKey string
+	midtransClientKey string
+	midtransEnvironment string
 )
 
 const (
@@ -108,45 +96,22 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
-	mayarApiKey = os.Getenv("MAYAR_API_KEY")
-	mayarProductId = os.Getenv("MAYAR_PRODUCT_ID")
 	geminiApiKey = os.Getenv("GEMINI_API_KEY")
-}
+	midtransServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
+	midtransClientKey = os.Getenv("MIDTRANS_CLIENT_KEY")
+	midtransEnvironment = os.Getenv("MIDTRANS_ENVIRONMENT")
 
-func getMayarProductDetail() (*MayarProductResponse, error) {
-	if mayarApiKey == "" || mayarProductId == "" {
-		return nil, fmt.Errorf("Mayar API credentials missing")
+	// Initialize Midtrans Snap client
+	if midtransServerKey != "" {
+		var environment midtrans.EnvironmentType
+		if midtransEnvironment == "production" {
+			environment = midtrans.Production
+		} else {
+			environment = midtrans.Sandbox
+		}
+		midtrans.ServerKey = midtransServerKey
+		midtrans.Environment = environment
 	}
-
-	url := fmt.Sprintf("https://api.mayar.id/hl/v1/product/%s", mayarProductId)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Authorization", "Bearer "+mayarApiKey)
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Mayar API returned status: %d", resp.StatusCode)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var mayarResp MayarProductResponse
-	if err := json.Unmarshal(body, &mayarResp); err != nil {
-		return nil, err
-	}
-
-	return &mayarResp, nil
 }
 
 func loadData() {
@@ -236,6 +201,25 @@ func pageNumbers(current, total int) []int {
 		pages = append(pages, page)
 	}
 	return pages
+}
+
+func formatRupiah(amount float64) string {
+	return fmt.Sprintf("Rp %.0f", amount)
+}
+
+func calculatePercentage(current float64, target float64) float64 {
+	if target <= 0 {
+		return 0
+	}
+	percent := (current / target) * 100
+	if percent > 100 {
+		return 100
+	}
+	return percent
+}
+
+func safeHTML(s string) template.HTML {
+	return template.HTML(s)
 }
 
 type SEOData struct {
@@ -955,6 +939,7 @@ func main() {
 	r.HandleFunc("/search", searchHandler)
 	r.HandleFunc("/api/explain", explainHandler)
 	r.HandleFunc("/donate", donateHandler)
+	r.HandleFunc("/api/midtrans/token", midtransTokenHandler)
 	r.HandleFunc("/faq", faqHandler)
 	r.HandleFunc("/robots.txt", robotsHandler)
 	r.HandleFunc("/sitemap.xml", sitemapHandler)
@@ -1173,12 +1158,6 @@ Guiding Principles:
 
 // Donation page handler
 func donateHandler(w http.ResponseWriter, r *http.Request) {
-	mayarData, err := getMayarProductDetail()
-	if err != nil {
-		log.Printf("Error fetching Mayar product: %v", err)
-		// Continue anyway, template will handle nil data
-	}
-
 	seo := SEOData{
 		Title:       "Donasi & Dukung Kami - hadits.online",
 		Description: "Bantu kami menjaga keberlangsungan layanan Hadits.online agar tetap gratis bagi umat Islam.",
@@ -1188,40 +1167,95 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageData := struct {
-		SEO  SEOData
-		Data *MayarProductResponse
+		SEO         SEOData
+		ClientKey   string
+		Environment string
 	}{
-		SEO:  seo,
-		Data: mayarData,
+		SEO:         seo,
+		ClientKey:   midtransClientKey,
+		Environment: midtransEnvironment,
 	}
 
 	tmpl := template.Must(template.New("donate.html").Funcs(template.FuncMap{
-		"add":         add,
-		"add1":        add1,
-		"subtract":    subtract,
-		"multiply":    multiply,
-		"pageNumbers": pageNumbers,
-		"formatRupiah": func(amount float64) string {
-			return fmt.Sprintf("Rp %.0f", amount)
-		},
-		"calculatePercentage": func(current float64, target float64) float64 {
-			if target <= 0 {
-				return 0
-			}
-			percent := (current / target) * 100
-			if percent > 100 {
-				return 100
-			}
-			return percent
-		},
-		"safeHTML": func(s string) template.HTML {
-			return template.HTML(s)
-		},
+		"add":                 add,
+		"add1":                add1,
+		"subtract":            subtract,
+		"multiply":            multiply,
+		"pageNumbers":         pageNumbers,
+		"formatRupiah":        formatRupiah,
+		"calculatePercentage": calculatePercentage,
+		"safeHTML":            safeHTML,
 	}).ParseFiles("templates/donate.html", "templates/components/navbar.html", "templates/components/footer.html"))
 
 	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// Midtrans Snap token handler
+func midtransTokenHandler(w http.ResponseWriter, r *http.Request) {
+	if midtransServerKey == "" {
+		http.Error(w, "Midtrans not configured", http.StatusServiceUnavailable)
+		return
+	}
+
+	var reqBody struct {
+		Amount   int    `json:"amount"`
+		DonorName string `json:"donor_name"`
+		DonorEmail string `json:"donor_email"`
+		DonorPhone string `json:"donor_phone"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate amount
+	if reqBody.Amount < 10000 {
+		http.Error(w, "Minimum donation amount is Rp 10.000", http.StatusBadRequest)
+		return
+	}
+
+	// Generate unique order ID
+	orderID := fmt.Sprintf("DONATION-%d-%d", time.Now().Unix(), reqBody.Amount)
+
+	// Create Snap request
+	req := &snap.Request{
+		TransactionDetails: midtrans.TransactionDetails{
+			OrderID:  orderID,
+			GrossAmt: int64(reqBody.Amount),
+		},
+		CustomerDetail: &midtrans.CustomerDetails{
+			FName: strings.Split(reqBody.DonorName, " ")[0],
+			Email: reqBody.DonorEmail,
+			Phone: reqBody.DonorPhone,
+		},
+		Items: &[]midtrans.ItemDetails{
+			{
+				ID:    "DONATION",
+				Price: int64(reqBody.Amount),
+				Qty:   1,
+				Name:  "Donasi Hadits Online",
+			},
+		},
+	}
+
+	// Create Snap transaction
+	token, err := snap.CreateTransactionToken(req)
+	if err != nil {
+		log.Printf("Error creating Midtrans transaction: %v", err)
+		http.Error(w, "Failed to create transaction", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"token":   token,
+		"order_id": orderID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // FAQ page handler

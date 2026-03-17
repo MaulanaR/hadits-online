@@ -8,7 +8,7 @@
     <meta name="keywords" content="{{.SEO.Keywords}}">
     <link rel="canonical" href="{{.SEO.Canonical}}">
     <link rel="icon" type="image/png" href="/static/logo.png">
-    
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#064e3b">
@@ -16,12 +16,20 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Hadits">
     <link rel="apple-touch-icon" href="/static/logo.png">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+
+    {{if .Environment}}
+    {{if eq .Environment "sandbox"}}
+    <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{.ClientKey}}"></script>
+    {{else}}
+    <script type="text/javascript" src="https://app.midtrans.com/snap/snap.js" data-client-key="{{.ClientKey}}"></script>
+    {{end}}
+    {{end}}
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
@@ -29,11 +37,11 @@
 
     <!-- Hero Header -->
     <section class="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" 
+        <div class="absolute inset-0 opacity-10"
              style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
-        
+
         <div class="container mx-auto px-4 relative z-10 text-center">
             <h1 class="text-4xl md:text-6xl font-black mb-6 tracking-tight">Dukung Dakwah Digital</h1>
             <p class="text-emerald-100/70 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
@@ -49,14 +57,13 @@
                 <!-- Donation Card -->
                 <div class="md:col-span-2 space-y-8">
                     <div class="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 border border-emerald-50">
-                        {{if .Data}}
                         <div class="flex items-center space-x-4 mb-8">
                             <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-black text-gray-800 tracking-tight">{{.Data.Data.Name}}</h3>
-                                <p class="text-emerald-600 font-bold text-sm uppercase tracking-widest">Program Donasi Terverifikasi</p>
+                                <h3 class="text-2xl font-black text-gray-800 tracking-tight">Dukung Hadits.online</h3>
+                                <p class="text-emerald-600 font-bold text-sm uppercase tracking-widest">Donasi Terpercaya</p>
                             </div>
                         </div>
 
@@ -69,35 +76,49 @@
                             Donasi digunakan untuk pengembangan fitur baru, perbaikan bug, dan peningkatan performa aplikasi.<br>
                             <br>
                             <h3>3. Keberlangsungan</h3>
-                            Aplikasi ini akan terus dikembangkan dan dirawat secara terbuka oleh tim developer. Sumber daya terbuka untuk umat Islam. 
+                            Aplikasi ini akan terus dikembangkan dan dirawat secara terbuka oleh tim developer. Sumber daya terbuka untuk umat Islam.
                         </div>
 
-                        <!-- Progress Bar (Dynamic) -->
-                        <div class="mb-10">
-                            <div class="flex justify-between items-end mb-3">
-                                <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Dana Terkumpul</span>
-                                <span class="text-lg font-black text-emerald-600">{{formatRupiah .Data.Data.TotalSales}}</span>
+                        <!-- Donation Form -->
+                        <div id="donation-form" class="space-y-6">
+                            <!-- Amount Selection -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-widest">Pilih Nominal Donasi</label>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    <button type="button" class="amount-btn py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all font-bold text-gray-700 text-sm" data-amount="10000">Rp 10.000</button>
+                                    <button type="button" class="amount-btn py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all font-bold text-gray-700 text-sm" data-amount="25000">Rp 25.000</button>
+                                    <button type="button" class="amount-btn py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all font-bold text-gray-700 text-sm" data-amount="50000">Rp 50.000</button>
+                                    <button type="button" class="amount-btn py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all font-bold text-gray-700 text-sm" data-amount="100000">Rp 100.000</button>
+                                    <button type="button" class="amount-btn py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all font-bold text-gray-700 text-sm" data-amount="200000">Rp 200.000</button>
+                                    <button type="button" class="amount-btn py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all font-bold text-gray-700 text-sm" data-amount="500000">Rp 500.000</button>
+                                </div>
+                                <div class="mt-4">
+                                    <input type="number" id="custom-amount" placeholder="Nominal lainnya (min. Rp 10.000)" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all font-bold text-gray-700" min="10000">
+                                </div>
                             </div>
-                            <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-50">
-                                <div class="h-full bg-emerald-500 rounded-full shadow-lg transition-all duration-1000" style="width: {{calculatePercentage .Data.Data.TotalSales 1500000}}%;"></div>
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-2 italic">* Target operasional tahunan: Rp 1.500.000</p>
-                        </div>
 
-                        <a href="https://mrlabs.myr.id/donate/dukung-aplikasi-ini-terus-hidup-bermanfaat-bagi-umat" target="_blank" class="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-200 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center space-x-3 text-lg">
-                            <span>💝 Donasi Sekarang</span>
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
-                        </a>
-                        {{else}}
-                        <div class="text-center py-10">
-                            <div class="animate-pulse flex flex-col items-center">
-                                <div class="rounded-full bg-gray-200 h-12 w-12 mb-4"></div>
-                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                            <!-- Donor Information -->
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-widest">Nama (Opsional)</label>
+                                    <input type="text" id="donor-name" placeholder="Masukkan nama Anda" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-widest">Email (Opsional)</label>
+                                    <input type="email" id="donor-email" placeholder="email@contoh.com" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-widest">No. HP (Opsional)</label>
+                                    <input type="tel" id="donor-phone" placeholder="08xxxxxxxxxx" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all">
+                                </div>
                             </div>
-                            <p class="text-gray-400 mt-4 text-sm font-medium">Memuat data donasi...</p>
+
+                            <!-- Pay Button -->
+                            <button id="pay-button" class="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-200 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center space-x-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                                <span>💝 Donasi Sekarang</span>
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
+                            </button>
                         </div>
-                        {{end}}
                     </div>
                 </div>
 
@@ -106,10 +127,6 @@
                     <div class="bg-emerald-600 rounded-[2rem] shadow-xl p-8 text-white">
                         <h4 class="text-lg font-black mb-6 border-b border-emerald-500 pb-4">Ringkasan</h4>
                         <div class="space-y-6">
-                            <div>
-                                <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1">Total Donatur</p>
-                                <p class="text-3xl font-black tracking-tighter">{{if .Data}}{{.Data.Data.TotalOrders}}{{else}}0{{end}}</p>
-                            </div>
                             <div>
                                 <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1">Metode Pembayaran</p>
                                 <div class="flex flex-wrap gap-2 mt-2">
@@ -135,5 +152,106 @@
 
     <!-- Footer -->
     {{template "footer" .}}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let selectedAmount = 0;
+            const amountBtns = document.querySelectorAll('.amount-btn');
+            const customAmountInput = document.getElementById('custom-amount');
+            const payButton = document.getElementById('pay-button');
+
+            // Handle preset amount buttons
+            amountBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    amountBtns.forEach(b => {
+                        b.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+                        b.classList.add('border-gray-200', 'text-gray-700');
+                    });
+
+                    // Add active class to clicked button
+                    this.classList.remove('border-gray-200', 'text-gray-700');
+                    this.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+
+                    selectedAmount = parseInt(this.dataset.amount);
+                    customAmountInput.value = '';
+                });
+            });
+
+            // Handle custom amount input
+            customAmountInput.addEventListener('input', function() {
+                // Remove active class from all buttons
+                amountBtns.forEach(b => {
+                    b.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+                    b.classList.add('border-gray-200', 'text-gray-700');
+                });
+
+                selectedAmount = parseInt(this.value) || 0;
+            });
+
+            // Handle pay button click
+            payButton.addEventListener('click', function() {
+                if (selectedAmount < 10000) {
+                    alert('Minimal donasi adalah Rp 10.000');
+                    return;
+                }
+
+                const donorName = document.getElementById('donor-name').value || 'Donatur';
+                const donorEmail = document.getElementById('donor-email').value || 'donatur@hadits.online';
+                const donorPhone = document.getElementById('donor-phone').value || '';
+
+                // Disable button and show loading
+                payButton.disabled = true;
+                payButton.innerHTML = '<span class="animate-spin">⏳</span> Memproses...';
+
+                // Request Snap token from backend
+                fetch('/api/midtrans/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: selectedAmount,
+                        donor_name: donorName,
+                        donor_email: donorEmail,
+                        donor_phone: donorPhone
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.token) {
+                        // Open Midtrans Snap popup
+                        window.snap.pay(data.token, {
+                            onSuccess: function(result) {
+                                alert('Terima kasih! Donasi Anda telah berhasil diproses. Semoga donasi Anda menjadi amal jariyah yang diterima oleh Allah SWT.');
+                                window.location.reload();
+                            },
+                            onPending: function(result) {
+                                alert('Menunggu pembayaran. Silakan selesaikan pembayaran Anda.');
+                                window.location.reload();
+                            },
+                            onError: function(result) {
+                                alert('Pembayaran gagal. Silakan coba lagi.');
+                                payButton.disabled = false;
+                                payButton.innerHTML = '<span>💝 Donasi Sekarang</span><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>';
+                            },
+                            onClose: function() {
+                                payButton.disabled = false;
+                                payButton.innerHTML = '<span>💝 Donasi Sekarang</span><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>';
+                            }
+                        });
+                    } else {
+                        throw new Error('Failed to get token');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan. Silakan coba lagi.');
+                    payButton.disabled = false;
+                    payButton.innerHTML = '<span>💝 Donasi Sekarang</span><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>';
+                });
+            });
+        });
+    </script>
 </body>
 </html>
