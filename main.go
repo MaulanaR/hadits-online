@@ -194,6 +194,7 @@ type PageData struct {
 	NextHadith *Collection
 	Collection string
 	Pagination Pagination
+	Daily      *DailyHadith
 }
 
 func favoritesHandler(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +212,8 @@ func favoritesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if cacheable(w, r, ccPage) {
+	now := time.Now()
+	if cacheable(w, r, ccPage, dailyKey(now), strconv.FormatUint(dataGen.Load(), 10)) {
 		return
 	}
 	seo := SEOData{
@@ -221,7 +223,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		Canonical:   siteURL + "/",
 		JSONLD:      homeJSONLD(),
 	}
-	render(w, "index.html", http.StatusOK, PageData{SEO: seo.withDefaults(), Data: data.Info})
+	render(w, "index.html", http.StatusOK, PageData{SEO: seo.withDefaults(), Data: data.Info, Daily: dailyHadith(now)})
 }
 
 func collectionHandler(w http.ResponseWriter, r *http.Request) {
