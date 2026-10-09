@@ -38,8 +38,9 @@ html {
 /* Arabic text enhancements */
 .arabic-text {
     font-family: 'Noto Naskh Arabic', 'Amiri Quran', serif;
-    line-height: 2.5;
-    font-size: 1.5rem;
+    line-height: 2.2;
+    font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+    word-spacing: .05em;
     text-align: right;
     direction: rtl;
 }
@@ -145,12 +146,121 @@ html {
 
 /* Mobile optimizations */
 @media (max-width: 768px) {
-    .arabic-text {
-        font-size: 1.25rem;
-    }
-
     .container {
         padding-left: 1rem;
         padding-right: 1rem;
+    }
+}
+/* ------------------------------------------------------------------ */
+/* Search page: compact classes (keeps the HTML small for 20 results)  */
+/* ------------------------------------------------------------------ */
+mark.hl {
+    background: #fef08a;
+    color: #111827;
+    border-radius: .25rem;
+    padding: 0 .125rem;
+}
+
+.rc {
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    border-radius: 2rem;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / .1), 0 8px 10px -6px rgb(0 0 0 / .1);
+    padding: 1.5rem;
+    transition: box-shadow .2s ease;
+}
+.rc:hover { box-shadow: 0 25px 50px -12px rgb(0 0 0 / .25); }
+.rc-head { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
+.rc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.rc-acts { display: flex; align-items: center; gap: .75rem; }
+.rc-kitab {
+    padding: .375rem 1rem; background: #d1fae5; color: #065f46; border-radius: 9999px;
+    font-size: .75rem; line-height: 1rem; font-weight: 900; text-transform: uppercase; letter-spacing: .1em;
+}
+.rc-title { font-size: 1.5rem; line-height: 2rem; font-weight: 900; color: #1f2937; letter-spacing: -.025em; }
+.rc-title a:hover { color: #047857; }
+.rc-ar { color: #1f2937; font-size: 1.25rem; margin-bottom: 1.5rem; }
+.rc-id {
+    color: #374151; font-size: 1rem; line-height: 1.75;
+    border-left: 4px solid #d1fae5; padding: .5rem 0 .5rem 1.5rem;
+}
+.rc-badge {
+    padding: .25rem .75rem; border-radius: 9999px; font-size: .75rem; line-height: 1rem;
+    font-weight: 900; text-transform: uppercase; letter-spacing: -.025em; border: 1px solid;
+}
+.rc-badge.hi { background: #fef9c3; color: #713f12; border-color: #fef08a; }
+.rc-badge.mid { background: #dbeafe; color: #1e3a8a; border-color: #bfdbfe; }
+.btn-read {
+    display: inline-flex; align-items: center; gap: .5rem; min-height: 44px;
+    padding: .75rem 1.25rem; background: #059669; color: #fff; border-radius: .75rem;
+    font-weight: 700; font-size: .875rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / .1);
+    transition: background-color .2s ease;
+}
+.btn-read:hover { background: #047857; }
+.btn-read:focus-visible, .rc-title a:focus-visible { outline: 3px solid #34d399; outline-offset: 2px; }
+@media (min-width: 768px) {
+    .rc { padding: 2.5rem; }
+    .rc-head { flex-direction: row; align-items: center; justify-content: space-between; }
+    .rc-ar { font-size: 1.5rem; }
+    .rc-id { font-size: 1.125rem; }
+}
+
+/* Filter form controls */
+.f-label { display: block; font-size: .75rem; line-height: 1rem; font-weight: 900; color: #4b5563; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .5rem; }
+.f-input {
+    width: 100%; padding: .75rem 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: .75rem;
+    color: #1f2937; transition: all .2s ease;
+}
+.f-input:focus { outline: none; background: #fff; border-color: #10b981; box-shadow: 0 0 0 4px rgb(16 185 129 / .2); }
+.chip {
+    display: inline-block; padding: .625rem 1.25rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: .75rem;
+    font-size: .875rem; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: -.05em;
+    transition: all .2s ease; cursor: pointer;
+}
+.chip:hover { background: #f3f4f6; }
+.peer:checked + .chip { background: #059669; color: #fff; border-color: #059669; box-shadow: 0 10px 15px -3px rgb(0 0 0 / .1); }
+.peer:focus-visible + .chip { outline: 3px solid #34d399; outline-offset: 2px; }
+
+/* ------------------------------------------------------------------ */
+/* Accessibility & shared UI                                           */
+/* ------------------------------------------------------------------ */
+.skip-link {
+    position: absolute; left: .75rem; top: -4rem; z-index: 100;
+    padding: .75rem 1rem; background: #fff; color: #065f46; font-weight: 700;
+    border-radius: .75rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / .2);
+    transition: top .15s ease;
+}
+.skip-link:focus { top: .75rem; outline: 3px solid #34d399; outline-offset: 2px; }
+
+/* Keyboard focus ring for links/buttons that don't define their own */
+a:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visible {
+    outline: 3px solid #34d399;
+    outline-offset: 2px;
+}
+
+/* The home page has the big hero search: hide the compact navbar one there */
+body.home .nav-msearch { display: none; }
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+
+/* Collapsible filter panel */
+details.filters > summary { list-style: none; cursor: pointer; }
+details.filters > summary::-webkit-details-marker { display: none; }
+details.filters > summary .chev { transition: transform .2s ease; }
+details.filters[open] > summary .chev { transform: rotate(180deg); }
+
+/* Touch: remove the 300ms tap delay on controls */
+a, button, input, select, summary, label { touch-action: manipulation; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
     }
 }

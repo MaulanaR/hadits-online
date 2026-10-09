@@ -17,16 +17,19 @@ function applyTheme() {
     }
 }
 
-// Search functionality
+// Search functionality (search boxes are real <form>s now; these remain as
+// fallbacks for any older inline handlers).
 function performSearch() {
-    const query = document.getElementById('searchInput').value.trim();
+    const input = document.getElementById('searchInput');
+    const query = input ? input.value.trim() : '';
     if (query) {
         window.location.href = '/search?q=' + encodeURIComponent(query);
     }
 }
 
 function performSearchDekstop() {
-    const query = document.getElementById('searchInputDkstp').value.trim();
+    const input = document.getElementById('searchInputDkstp');
+    const query = input ? input.value.trim() : '';
     if (query) {
         window.location.href = '/search?q=' + encodeURIComponent(query);
     }
@@ -78,41 +81,20 @@ function copyShareLink(url) {
     });
 }
 
-// Keyboard navigation
-document.addEventListener('keydown', function (e) {
-    // Ctrl/Cmd + Arrow keys for hadith navigation
-    if ((e.ctrlKey || e.metaKey)) {
-        if (e.key === 'ArrowLeft') {
-            const prevLink = document.querySelector('a[href*="/collection/"][href*="/"]');
-            if (prevLink && prevLink.textContent.includes('Hadith')) {
-                window.location.href = prevLink.href;
-            }
-        } else if (e.key === 'ArrowRight') {
-            const nextLink = document.querySelector('a[href*="/collection/"][href*="/"]');
-            if (nextLink && nextLink.textContent.includes('Hadith')) {
-                const allLinks = document.querySelectorAll('a[href*="/collection/"][href*="/"]');
-                if (allLinks.length > 1) {
-                    // Find the "next" link (second one in this case)
-                    const nextButton = Array.from(allLinks).find(link =>
-                        link.textContent.includes('Hadith') &&
-                        link.href.includes('>') ||
-                        link.href.includes('Selanjutnya')
-                    );
-                    if (nextButton) {
-                        window.location.href = nextButton.href;
-                    }
-                }
-            }
-        }
-    }
+function isVisible(el) {
+    return !!el && el.offsetParent !== null;
+}
 
-    // Focus search with / key
-    if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput && document.activeElement !== searchInput) {
-            e.preventDefault();
-            searchInput.focus();
-        }
+// Keyboard shortcut: "/" focuses the visible search box.
+document.addEventListener('keydown', function (e) {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = document.activeElement ? document.activeElement.tagName : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (document.activeElement && document.activeElement.isContentEditable)) return;
+    const candidates = ['heroSearchInput', 'searchInputDkstp', 'searchInput', 'f-q'].map(function (id) { return document.getElementById(id); });
+    const target = candidates.find(isVisible);
+    if (target) {
+        e.preventDefault();
+        target.focus();
     }
 });
 
@@ -130,27 +112,84 @@ function hideLoading(element) {
     }
 }
 
-// Search highlighting
-function highlightSearchResults(searchTerm) {
-    if (!searchTerm) return;
-
-    const elements = document.querySelectorAll('.searchable-content');
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-
-    elements.forEach(element => {
-        const originalText = element.textContent;
-        const highlightedText = originalText.replace(regex, '<mark class="search-highlight">$1</mark>');
-        element.innerHTML = highlightedText;
-    });
-}
+// Search highlighting is done on the server now (<mark> in snippets).
+function highlightSearchResults(searchTerm) {}
 
 // Auto-save search preferences
 function saveSearchPreference(key, value) {
-    localStorage.setItem('search_' + key, value);
+    try { localStorage.setItem('search_' + key, value); } catch (e) {}
 }
 
 function getSearchPreference(key, defaultValue = '') {
-    return localStorage.getItem('search_' + key) || defaultValue;
+    try { return localStorage.getItem('search_' + key) || defaultValue; } catch (e) { return defaultValue; }
+}
+
+// Submit feedback for search forms: disable the button and show "Mencari…".
+function setSearchBusy(form, busy) {
+    const btn = form.querySelector('button[type="submit"]');
+    if (!btn) return;
+    if (busy) {
+        if (!btn.dataset.label) btn.dataset.label = btn.innerHTML;
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        const compact = btn.offsetWidth < 80;
+        btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true"></span>' +
+            (compact ? '<span class="sr-only">Mencari…</span>' : '<span class="ml-2">Mencari…</span>');
+    } else if (btn.dataset.label) {
+        btn.innerHTML = btn.dataset.label;
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+    }
+}
+
+function initSearchForms() {
+    document.querySelectorAll('form[role="search"]').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            const q = form.querySelector('[name="q"]');
+            if (q && !q.value.trim()) {
+                e.preventDefault();
+                q.focus();
+                return;
+            }
+            setSearchBusy(form, true);
+        });
+    });
+}
+
+// Back/forward cache restores the page with the busy button: reset it.
+window.addEventListener('pageshow', function () {
+    document.querySelectorAll('form[role="search"]').forEach(function (form) { setSearchBusy(form, false); });
+});
+
+// Mobile menu + active navigation link
+function initNavbar() {
+    const btn = document.getElementById('mobileMenuBtn');
+    const menu = document.getElementById('mobileMenu');
+    if (btn && menu) {
+        btn.addEventListener('click', function () {
+            const open = menu.classList.toggle('hidden') === false;
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.nav-link, .nav-link-m').forEach(function (link) {
+        if (link.getAttribute('data-path') === currentPath) {
+            link.setAttribute('aria-current', 'page');
+            if (link.classList.contains('nav-link')) {
+                link.classList.add('bg-white/20', 'text-emerald-50');
+            } else {
+                link.classList.add('bg-white/20', 'border-l-4', 'border-emerald-300');
+            }
+        }
+    });
+    // On the search page, prefill the navbar boxes with the current query.
+    if (currentPath === '/search') {
+        const q = new URLSearchParams(window.location.search).get('q') || '';
+        ['searchInput', 'searchInputDkstp'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el && !el.value) el.value = q;
+        });
+    }
 }
 
 // Initialize on page load
@@ -166,39 +205,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Apply saved theme
     applyTheme();
+    initNavbar();
+    initSearchForms();
 
-    // Add search enter key handler
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
-        });
-
+    ['searchInput', 'searchInputDkstp'].forEach(function (id) {
+        const input = document.getElementById(id);
+        if (!input) return;
         // Auto-save search query
-        searchInput.addEventListener('input', function () {
+        input.addEventListener('input', function () {
             saveSearchPreference('lastQuery', this.value);
         });
-
-        // Restore last search query
+        // Restore last search query as a hint
         const lastQuery = getSearchPreference('lastQuery');
-        if (lastQuery && !searchInput.value) {
-            searchInput.placeholder = `Cari: "${lastQuery}"`;
+        if (lastQuery && !input.value) {
+            input.placeholder = 'Cari: "' + lastQuery + '"';
         }
-    }
+    });
 
-    // Add smooth scroll for anchor links
+    // Smooth scroll for in-page anchors (instant when reduced motion is
+    // requested); the target receives focus so keyboard users land there too.
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (href.length < 2) return;
+            const target = document.querySelector(href);
+            if (!target) return;
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
+            target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+            if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+            target.focus({ preventScroll: true });
         });
     });
 });

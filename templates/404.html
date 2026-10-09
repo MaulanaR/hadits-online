@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.SEO.Title}}</title>
-    <meta name="description" content="{{.SEO.Description}}">
-    <meta name="robots" content="noindex, follow">
-    
+    {{template "seo" .}}
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#064e3b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Hadits">
-    <link rel="apple-touch-icon" href="/static/logo.png">
-    
+    <link rel="apple-touch-icon" href="{{asset "logo.png"}}">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{asset "style.css"}}">
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
@@ -26,38 +25,49 @@
 
     <!-- Hero Header -->
     <section class="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" 
-             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        <div class="absolute inset-0 opacity-10"
+             style="background-image: url('{{asset "patter_ketupat.png"}}'); background-size: 100px; background-repeat: repeat;">
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
-        
+
         <div class="container mx-auto px-4 relative z-10 text-center">
             <h1 class="text-5xl md:text-8xl font-black mb-6 tracking-tighter text-emerald-400">404</h1>
             <h2 class="text-2xl md:text-4xl font-bold mb-4 tracking-tight">Halaman Tidak Ditemukan</h2>
-            <p class="text-emerald-100/70 text-lg md:text-xl max-w-2xl mx-auto font-light">
+            <p class="text-emerald-100/90 text-lg md:text-xl max-w-2xl mx-auto font-light">
                 Maaf, halaman <span class="font-mono bg-white/10 px-2 py-1 rounded text-white text-sm">{{.Path}}</span> yang Anda cari tidak dapat kami temukan.
             </p>
         </div>
     </section>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-12 flex-grow">
+    <main id="main" class="container mx-auto px-4 py-12 flex-grow">
         <div class="max-w-2xl mx-auto -mt-20 relative z-20">
             <div class="bg-white rounded-[3rem] shadow-2xl p-10 md:p-16 border border-emerald-50 text-center">
-                <div class="w-24 h-24 bg-red-50 text-red-200 rounded-full flex items-center justify-center mx-auto mb-8">
+                <div aria-hidden="true" class="w-24 h-24 bg-red-50 text-red-300 rounded-full flex items-center justify-center mx-auto mb-8">
                     <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                
-                <p class="text-gray-500 text-lg mb-10 leading-relaxed">
+
+                <form action="/search" method="get" role="search" class="js-search-form relative mb-8 text-left">
+                    <label for="nfSearch" class="sr-only">Cari hadits</label>
+                    <input type="search" name="q" id="nfSearch" placeholder="Cari hadits..." enterkeyhint="search" autocomplete="off"
+                           class="w-full pl-5 pr-24 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500">
+                    <button type="submit" aria-label="Cari" class="absolute right-2 top-2 bottom-2 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl">Cari</button>
+                </form>
+                <p class="text-gray-600 text-lg mb-10 leading-relaxed">
                     Mungkin tautan yang Anda klik sudah kedaluwarsa atau terjadi kesalahan pengetikan URL. Cobalah kembali ke beranda untuk memulai pencarian baru.
                 </p>
 
+                {{if .Collection}}
+                <p class="text-gray-700 mb-8">Nomor hadits tersebut tidak ada di kitab {{.Collection.Name}}.
+                    <a href="/collection/{{.Collection.Slug}}" class="text-emerald-700 font-bold underline underline-offset-4">Kembali ke Kitab {{.Collection.Name}}</a>
+                </p>
+                {{end}}
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <a href="/" class="px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center">
-                        🏠 Kembali ke Beranda
+                        Kembali ke Beranda
                     </a>
                     <a href="/#collections" class="px-10 py-5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-2xl transition-all flex items-center justify-center">
-                        📚 Koleksi Hadits
+                        Koleksi Hadits
                     </a>
                 </div>
             </div>
@@ -66,4 +76,7 @@
 
     <!-- Footer -->
     {{template "footer" .}}
+
+    <script src="{{asset "script.js"}}"></script>
+</body>
 </html>

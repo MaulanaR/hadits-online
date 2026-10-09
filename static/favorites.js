@@ -163,65 +163,8 @@ let favoritesManager;
 
 document.addEventListener('DOMContentLoaded', function () {
     favoritesManager = new FavoritesManager();
-
-    // Initialize other existing functionality
-    // Apply saved theme
-    applyTheme();
-
-    // Add search enter key handler
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
-        });
-
-        // Auto-save search query
-        searchInput.addEventListener('input', function () {
-            saveSearchPreference('lastQuery', this.value);
-        });
-
-        // Restore last search query
-        const lastQuery = getSearchPreference('lastQuery');
-        if (lastQuery && !searchInput.value) {
-            searchInput.placeholder = `Cari: "${lastQuery}"`;
-        }
-    }
-
-    const searchInputDkstp = document.getElementById('searchInputDkstp');
-    if (searchInputDkstp) {
-        searchInputDkstp.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                performSearchDekstop();
-            }
-        });
-
-        // Auto-save search query
-        searchInputDkstp.addEventListener('input', function () {
-            saveSearchPreference('lastQuery', this.value);
-        });
-
-        // Restore last search query
-        const lastQuery = getSearchPreference('lastQuery');
-        if (lastQuery && !searchInputDkstp.value) {
-            searchInputDkstp.placeholder = `Cari: "${lastQuery}"`;
-        }
-    }
-
-    // Add smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-    });
+    // Theme, search inputs and anchor scrolling are initialised by script.js
+    // (loaded on every page before this file).
 });
 
 // Export for use in templates

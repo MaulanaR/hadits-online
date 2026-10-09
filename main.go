@@ -1,18 +1,23 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"html"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
-	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -37,7 +42,6 @@ type CollectionInfo struct {
 type HadithData struct {
 	// Only keep collection info in memory (very small ~10KB)
 	Info []CollectionInfo
-	mu   sync.RWMutex
 }
 
 type Pagination struct {
@@ -49,15 +53,8 @@ type Pagination struct {
 	HasPrev     bool
 }
 
-type SearchResult struct {
-	Collection string     `json:"collection"`
-	Slug       string     `json:"slug"`
-	Hadith     Collection `json:"hadith"`
-	Context    string     `json:"context"`
-	Score      int        `json:"score"` // For relevance scoring
-}
-
 type SearchFilters struct {
+	TextSearch  bool        `json:"-"` // ?text=1: run the text search even for "bukhari 1"-style queries
 	Query       string      `json:"query"`
 	Collections []string    `json:"collections"`
 	Language    string      `json:"language"` // "ar", "id", "all"
@@ -70,21 +67,11 @@ type NumberRange struct {
 	Max int `json:"max"`
 }
 
-type FilteredResults struct {
-	Query       string
-	Filters     SearchFilters
-	Results     []SearchResult
-	Pagination  Pagination
-	TotalItems  int
-	Collections []CollectionInfo
-}
-
 var (
-	data              *HadithData
-	tmpl              *template.Template
-	geminiApiKey      string
-	midtransServerKey string
-	midtransClientKey string
+	data                *HadithData
+	geminiApiKey        string
+	midtransServerKey   string
+	midtransClientKey   string
 	midtransEnvironment string
 )
 
@@ -132,33 +119,6 @@ func loadData() {
 	log.Printf("Loaded %d collection info (disk-based mode - very low memory usage)", len(data.Info))
 }
 
-// Load a single collection from disk on-demand
-func loadCollection(slug string) ([]Collection, error) {
-	filename := "resource/" + slug + ".json"
-	collectionData, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("error loading %s: %v", filename, err)
-	}
-
-	var collection []Collection
-	err = json.Unmarshal(collectionData, &collection)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing %s: %v", filename, err)
-	}
-
-	return collection, nil
-}
-
-// Get collection info by slug
-func getCollectionInfo(slug string) *CollectionInfo {
-	for _, info := range data.Info {
-		if info.Slug == slug {
-			return &info
-		}
-	}
-	return nil
-}
-
 // Template functions
 func add(a, b int) int {
 	return a + b
@@ -176,10 +136,13 @@ func multiply(a, b int) int {
 	return a * b
 }
 
+// reBracket matches narrator names written as [Name] in the Indonesian text.
+var reBracket = regexp.MustCompile(`\[(.*?)\]`)
+
+// formatHadith escapes the text first and only then turns [..] into <strong>..</strong>,
+// so data can never inject markup.
 func formatHadith(s string) template.HTML {
-	re := regexp.MustCompile(`\[(.*?)\]`)
-	result := re.ReplaceAllString(s, "<strong>$1</strong>")
-	return template.HTML(result)
+	return template.HTML(reBracket.ReplaceAllString(html.EscapeString(s), "<strong>$1</strong>"))
 }
 
 func pageNumbers(current, total int) []int {
@@ -222,15 +185,6 @@ func safeHTML(s string) template.HTML {
 	return template.HTML(s)
 }
 
-type SEOData struct {
-	Title       string
-	Description string
-	Keywords    string
-	OGImage     string
-	OGUrl       string
-	Canonical   string
-}
-
 type PageData struct {
 	SEO        SEOData
 	Data       interface{}
@@ -243,97 +197,76 @@ type PageData struct {
 }
 
 func favoritesHandler(w http.ResponseWriter, r *http.Request) {
+	if cacheable(w, r, ccNoCache) {
+		return
+	}
 	seo := SEOData{
 		Title:       "Hadits Favorit Saya - hadits.online",
 		Description: "Daftar hadits pilihan yang Anda simpan untuk dipelajari lebih lanjut.",
 		Keywords:    "hadits favorit, simpan hadits, belajar islam",
-		OGUrl:       "https://hadits.online/favorites",
-		Canonical:   "https://hadits.online/favorites",
+		Canonical:   siteURL + "/favorites",
+		Robots:      "noindex, follow",
 	}
-
-	pageData := PageData{
-		SEO: seo,
-	}
-
-	tmpl := template.Must(template.ParseFiles("templates/favorites.html", "templates/components/navbar.html", "templates/components/footer.html"))
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
-	}
+	render(w, "favorites.html", http.StatusOK, PageData{SEO: seo.withDefaults()})
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	// Create a template with custom functions
-	funcMap := template.FuncMap{
-		"add":          add,
-		"add1":         add1,
-		"subtract":     subtract,
-		"multiply":     multiply,
-		"pageNumbers":  pageNumbers,
-		"formatHadith": formatHadith,
+	if cacheable(w, r, ccPage) {
+		return
 	}
-
 	seo := SEOData{
 		Title:       "hadits.online - Pusat Belajar Hadits Terlengkap Bahasa Indonesia",
 		Description: "Cari dan pelajari ribuan hadits shahih dari Bukhari, Muslim, Abu Daud, dan kitab lainnya dengan terjemahan Indonesia yang akurat.",
 		Keywords:    "hadits online, hadits shahih, bukhari, muslim, terjemahan hadits, belajar islam",
-		OGUrl:       "https://hadits.online/",
-		Canonical:   "https://hadits.online/",
+		Canonical:   siteURL + "/",
+		JSONLD:      homeJSONLD(),
 	}
-
-	pageData := PageData{
-		SEO:  seo,
-		Data: data.Info,
-	}
-
-	tmpl := template.Must(template.New("index.html").Funcs(funcMap).ParseFiles("templates/index.html", "templates/components/navbar.html", "templates/components/footer.html"))
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
-	}
+	render(w, "index.html", http.StatusOK, PageData{SEO: seo.withDefaults(), Data: data.Info})
 }
 
 func collectionHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	slug := vars["slug"]
-
-	// Get collection info
-	info := getCollectionInfo(slug)
-	if info == nil {
-		http.Error(w, "Collection not found", http.StatusNotFound)
+	slug := mux.Vars(r)["slug"]
+	c, ok := getBySlug(slug)
+	if !ok {
+		notFoundHandler(w, r)
 		return
 	}
+	info := &c.Info
+	base := "/collection/" + slug
+	totalItems := c.count()
+	totalPages := max(1, (totalItems+ItemsPerPage-1)/ItemsPerPage)
 
-	// Load collection from disk on-demand
-	collection, err := loadCollection(slug)
-	if err != nil {
-		http.Error(w, "Error loading collection: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Get pagination parameters
+	// ?page=N: invalid -> 301 to the first page, past the end -> 301 to the
+	// last page (no duplicate content).
 	page := 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
-		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-			page = p
+		p, err := strconv.Atoi(pageStr)
+		switch {
+		case err != nil || p < 1:
+			http.Redirect(w, r, base, http.StatusFound)
+			return
+		case p > totalPages:
+			http.Redirect(w, r, base+"?page="+strconv.Itoa(totalPages), http.StatusFound)
+			return
+		}
+		page = p
+	}
+	if cacheable(w, r, ccPage, strconv.FormatUint(c.generation(), 10)) {
+		return
+	}
+
+	startIndex := (page - 1) * ItemsPerPage
+	endIndex := min(startIndex+ItemsPerPage, totalItems)
+	var paginatedHadiths []Collection
+	if endIndex > startIndex {
+		var err error
+		paginatedHadiths, err = c.readRange(startIndex, endIndex)
+		if err != nil {
+			log.Printf("collection %s page %d: %v", slug, page, err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 	}
-
-	// Calculate pagination
-	totalItems := len(collection)
-	totalPages := (totalItems + ItemsPerPage - 1) / ItemsPerPage
-	startIndex := (page - 1) * ItemsPerPage
-	endIndex := startIndex + ItemsPerPage
-
-	if startIndex >= totalItems {
-		startIndex = 0
-		endIndex = ItemsPerPage
-		page = 1
-	}
-
-	if endIndex > totalItems {
-		endIndex = totalItems
-	}
-
-	paginatedHadiths := collection[startIndex:endIndex]
 
 	pagination := Pagination{
 		CurrentPage: page,
@@ -344,637 +277,215 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 		HasPrev:     page > 1,
 	}
 
+	pageURL := func(p int) string {
+		if p <= 1 {
+			return siteURL + base
+		}
+		return siteURL + base + "?page=" + strconv.Itoa(p)
+	}
+	description := fmt.Sprintf("Daftar lengkap hadits dari kitab %s. Tersedia %d hadits dengan terjemahan Indonesia.", info.Name, info.Total)
+	title := fmt.Sprintf("Koleksi Hadits %s - hadits.online", info.Name)
+	if page > 1 {
+		title = fmt.Sprintf("Koleksi Hadits %s – Halaman %d - hadits.online", info.Name, page)
+		description = fmt.Sprintf("Hadits %s halaman %d dari %d: nomor %d sampai %d dengan teks Arab dan terjemahan Indonesia.",
+			info.Name, page, totalPages, paginatedHadiths[0].Number, paginatedHadiths[len(paginatedHadiths)-1].Number)
+	}
 	seo := SEOData{
-		Title:       fmt.Sprintf("Koleksi Hadits %s - hadits.online", info.Name),
-		Description: fmt.Sprintf("Daftar lengkap hadits dari kitab %s. Tersedia %d hadits dengan terjemahan Indonesia.", info.Name, info.Total),
+		Title:       title,
+		Description: description,
 		Keywords:    fmt.Sprintf("hadits %s, kitab %s, kumpulan hadits", info.Name, info.Name),
-		OGUrl:       fmt.Sprintf("https://hadits.online/collection/%s", slug),
-		Canonical:   fmt.Sprintf("https://hadits.online/collection/%s", slug),
+		Canonical:   pageURL(page),
+		JSONLD:      collectionJSONLD(info, pageURL(page), description),
+	}
+	if page > 1 {
+		seo.PrevURL = pageURL(page - 1)
+	}
+	if page < totalPages {
+		seo.NextURL = pageURL(page + 1)
 	}
 
-	pageData := PageData{
-		SEO:        seo,
+	render(w, "collection.html", http.StatusOK, PageData{
+		SEO:        seo.withDefaults(),
 		Info:       info,
 		Data:       paginatedHadiths,
 		Collection: slug,
 		Pagination: pagination,
-	}
+	})
+}
 
-	// Create template with custom functions
-	funcMap := template.FuncMap{
-		"add":          add,
-		"add1":         add1,
-		"subtract":     subtract,
-		"multiply":     multiply,
-		"pageNumbers":  pageNumbers,
-		"formatHadith": formatHadith,
-	}
-
-	tmpl := template.Must(template.New("collection.html").Funcs(funcMap).ParseFiles("templates/collection.html", "templates/components/navbar.html", "templates/components/footer.html"))
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
-	}
+// HadithPage is the data of templates/hadith.html.
+type HadithPage struct {
+	PageData
+	Matan string
 }
 
 func hadithHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slug := vars["slug"]
-	numberStr := vars["number"]
+	c, ok := getBySlug(slug)
+	if !ok {
+		notFoundHandler(w, r)
+		return
+	}
+	info := &c.Info
 
-	// Load collection from disk on-demand
-	collection, err := loadCollection(slug)
+	number, err := strconv.Atoi(vars["number"])
 	if err != nil {
-		http.Error(w, "Error loading collection: "+err.Error(), http.StatusInternalServerError)
+		notFoundHandler(w, r)
 		return
 	}
-
-	// Find hadith by number
-	number, err := strconv.Atoi(numberStr)
+	idx, found := c.indexOf(number)
+	if !found {
+		notFoundHandler(w, r)
+		return
+	}
+	if cacheable(w, r, ccPage, strconv.FormatUint(c.generation(), 10)) {
+		return
+	}
+	h, err := c.read(idx)
 	if err != nil {
-		http.Error(w, "Invalid hadith number", http.StatusBadRequest)
-		return
-	}
-
-	var hadith *Collection
-	var hadithIndex int
-	for i, h := range collection {
-		if h.Number == number {
-			hadith = &h
-			hadithIndex = i
-			break
-		}
-	}
-
-	if hadith == nil {
-		http.Error(w, "Hadith not found", http.StatusNotFound)
-		return
-	}
-
-	// Get collection info
-	info := getCollectionInfo(slug)
-	if info == nil {
-		http.Error(w, "Collection info not found", http.StatusNotFound)
-		return
-	}
-
-	var prevHadith, nextHadith *Collection
-	if hadithIndex > 0 {
-		prevHadith = &collection[hadithIndex-1]
-	}
-	if hadithIndex < len(collection)-1 {
-		nextHadith = &collection[hadithIndex+1]
-	}
-
-	description := hadith.ID
-	if len(description) > 160 {
-		description = description[:157] + "..."
-	}
-
-	seo := SEOData{
-		Title:       fmt.Sprintf("Hadits %s No. %d - hadits.online", info.Name, hadith.Number),
-		Description: description,
-		Keywords:    fmt.Sprintf("hadits %s %d, %s no %d", info.Name, hadith.Number, info.Name, hadith.Number),
-		OGUrl:       fmt.Sprintf("https://hadits.online/collection/%s/%d", slug, hadith.Number),
-		Canonical:   fmt.Sprintf("https://hadits.online/collection/%s/%d", slug, hadith.Number),
-	}
-
-	pageData := PageData{
-		SEO:        seo,
-		Info:       info,
-		Hadith:     hadith,
-		PrevHadith: prevHadith,
-		NextHadith: nextHadith,
-	}
-
-	// Create template with custom functions
-	funcMap := template.FuncMap{
-		"add":          add,
-		"add1":         add1,
-		"subtract":     subtract,
-		"multiply":     multiply,
-		"pageNumbers":  pageNumbers,
-		"formatHadith": formatHadith,
-	}
-
-	tmpl := template.Must(template.New("hadith.html").Funcs(funcMap).ParseFiles("templates/hadith.html", "templates/components/navbar.html", "templates/components/footer.html"))
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func searchHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse filters
-	filters := parseSearchFilters(r)
-
-	// Validate query
-	if filters.Query == "" {
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
-
-	// Get pagination parameters
-	page := 1
-	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
-		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-			page = p
-		}
-	}
-
-	// Perform advanced search
-	allResults := performAdvancedSearch(filters)
-	totalItems := len(allResults)
-
-	// Calculate pagination
-	totalPages := (totalItems + ItemsPerPage - 1) / ItemsPerPage
-	if page > totalPages && totalPages > 0 {
-		page = totalPages
-	}
-	if page < 1 {
-		page = 1
-	}
-
-	startIndex := (page - 1) * ItemsPerPage
-	endIndex := startIndex + ItemsPerPage
-
-	if startIndex < 0 {
-		startIndex = 0
-	}
-	if startIndex > totalItems {
-		startIndex = totalItems
-	}
-	if endIndex > totalItems {
-		endIndex = totalItems
-	}
-
-	var paginatedResults []SearchResult
-	if totalItems > 0 {
-		paginatedResults = allResults[startIndex:endIndex]
-	}
-
-	pagination := Pagination{
-		CurrentPage: page,
-		TotalPages:  totalPages,
-		PerPage:     ItemsPerPage,
-		TotalItems:  totalItems,
-		HasNext:     page < totalPages,
-		HasPrev:     page > 1,
-	}
-
-	seo := SEOData{
-		Title:       fmt.Sprintf("Hasil Pencarian: %s - hadits.online", filters.Query),
-		Description: fmt.Sprintf("Temukan %d hadits terkait %s di hadits.online.", totalItems, filters.Query),
-		Keywords:    fmt.Sprintf("cari hadits %s, hasil pencarian %s", filters.Query, filters.Query),
-		OGUrl:       fmt.Sprintf("https://hadits.online/search?q=%s", filters.Query),
-		Canonical:   fmt.Sprintf("https://hadits.online/search?q=%s", filters.Query),
-	}
-
-	pageData := struct {
-		SEO         SEOData
-		Query       string
-		Filters     SearchFilters
-		Results     []SearchResult
-		Pagination  Pagination
-		TotalItems  int
-		Collections []CollectionInfo
-	}{
-		SEO:         seo,
-		Query:       filters.Query,
-		Filters:     filters,
-		Results:     paginatedResults,
-		Pagination:  pagination,
-		TotalItems:  totalItems,
-		Collections: data.Info,
-	}
-
-	// Create template with custom functions
-	funcMap := template.FuncMap{
-		"add":          add,
-		"add1":         add1,
-		"subtract":     subtract,
-		"multiply":     multiply,
-		"pageNumbers":  pageNumbers,
-		"formatHadith": formatHadith,
-		"urlEncode": func(s string) string {
-			result := strings.ReplaceAll(s, " ", "+")
-			result = strings.ReplaceAll(result, "&", "%26")
-			result = strings.ReplaceAll(result, "=", "%3D")
-			return result
-		},
-		"hasFilter": func(slice []string, item string) bool {
-			for _, v := range slice {
-				if v == item {
-					return true
-				}
-			}
-			return false
-		},
-		"buildFilterURL": func(query string, filters SearchFilters, page int) string {
-			params := []string{}
-			if query != "" {
-				params = append(params, "q="+strings.ReplaceAll(query, " ", "+"))
-			}
-			if filters.Language != "" && filters.Language != "all" {
-				params = append(params, "lang="+filters.Language)
-			}
-			if filters.SortBy != "" && filters.SortBy != "relevance" {
-				params = append(params, "sort="+filters.SortBy)
-			}
-			if len(filters.Collections) > 0 {
-				collections := strings.Join(filters.Collections, ",")
-				params = append(params, "collections="+collections)
-			}
-			if filters.NumberRange.Min > 0 {
-				params = append(params, fmt.Sprintf("min=%d", filters.NumberRange.Min))
-			}
-			if filters.NumberRange.Max > 0 {
-				params = append(params, fmt.Sprintf("max=%d", filters.NumberRange.Max))
-			}
-			if page > 1 {
-				params = append(params, fmt.Sprintf("page=%d", page))
-			}
-
-			if len(params) > 0 {
-				return "/search?" + strings.Join(params, "&")
-			}
-			return "/search"
-		},
-	}
-
-	tmpl := template.Must(template.New("search.html").Funcs(funcMap).ParseFiles("templates/search.html", "templates/components/navbar.html", "templates/components/footer.html"))
-	if err := tmpl.Execute(w, pageData); err != nil {
-		log.Printf("Template execution error in searchHandler: %v", err)
+		log.Printf("hadith %s/%d: %v", slug, number, err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
+	hadith := &h
+
+	// Prev/next only need the numbers (the template uses .Number only).
+	var prevHadith, nextHadith *Collection
+	if idx > 0 {
+		prevHadith = &Collection{Number: c.numberAt(idx - 1)}
+	}
+	if idx < c.count()-1 {
+		nextHadith = &Collection{Number: c.numberAt(idx + 1)}
+	}
+
+	matan := matanOf(hadith.ID)
+	title := fmt.Sprintf("Hadits %s No. %d | hadits.online", info.Name, hadith.Number)
+	if matan != "" {
+		title = fmt.Sprintf("%s – HR. %s No. %d | hadits.online", truncateRunes(matan, 55), info.Name, hadith.Number)
+	}
+	pageURL := fmt.Sprintf("%s/collection/%s/%d", siteURL, slug, hadith.Number)
+	seo := SEOData{
+		Title:       title,
+		Description: truncateRunes(matan, 155),
+		Keywords:    fmt.Sprintf("hadits %s %d, %s no %d, HR %s", info.Name, hadith.Number, info.Name, hadith.Number, info.Name),
+		Canonical:   pageURL,
+		OGType:      "article",
+		JSONLD:      hadithJSONLD(info, hadith, pageURL, matan),
+	}
+
+	render(w, "hadith.html", http.StatusOK, HadithPage{
+		PageData: PageData{
+			SEO:        seo.withDefaults(),
+			Info:       info,
+			Hadith:     hadith,
+			PrevHadith: prevHadith,
+			NextHadith: nextHadith,
+		},
+		Matan: matan,
+	})
 }
 
-// Helper function to highlight search terms
-func highlightText(text, query string) string {
-	if query == "" {
-		return text
+// notFoundHandler renders the 404 template with a 404 status.
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	seo := SEOData{
+		Title:       "Halaman Tidak Ditemukan - hadits.online",
+		Description: "Maaf, halaman yang Anda cari tidak dapat ditemukan.",
+		Robots:      "noindex, follow",
 	}
-
-	// Simple highlighting - in production you'd want more sophisticated highlighting
-	words := strings.Fields(strings.ToLower(query))
-	result := text
-
-	for _, word := range words {
-		if len(word) > 2 { // Only highlight words longer than 2 characters
-			// This is a simple case-insensitive replacement
-			// In production, you'd want better HTML escaping and matching
-			result = strings.ReplaceAll(result, word,
-				"<mark class='bg-yellow-200 px-1 rounded'>"+word+"</mark>")
+	// Offer the collection when a hadith number inside it was not found.
+	var back *CollectionInfo
+	if slug := mux.Vars(r)["slug"]; slug != "" {
+		if c, ok := getBySlug(slug); ok {
+			back = &c.Info
 		}
 	}
-
-	return result
+	w.Header().Set("Cache-Control", "no-cache")
+	render(w, "404.html", http.StatusNotFound, struct {
+		SEO        SEOData
+		Path       string
+		Collection *CollectionInfo
+	}{SEO: seo.withDefaults(), Path: r.URL.Path, Collection: back})
 }
 
-// Advanced filtering functions
-func parseSearchFilters(r *http.Request) SearchFilters {
-	filters := SearchFilters{
-		Query:    strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q"))),
-		Language: r.URL.Query().Get("lang"),
-		SortBy:   r.URL.Query().Get("sort"),
-	}
-
-	// Parse collections filter
-	collectionsParam := r.URL.Query().Get("collections")
-	if collectionsParam != "" {
-		filters.Collections = strings.Split(collectionsParam, ",")
-		// Clean up collection names
-		for i, col := range filters.Collections {
-			filters.Collections[i] = strings.TrimSpace(col)
-		}
-	}
-
-	// Parse number range
-	minStr := r.URL.Query().Get("min")
-	maxStr := r.URL.Query().Get("max")
-	if minStr != "" || maxStr != "" {
-		filters.NumberRange = NumberRange{}
-		if minStr != "" {
-			if min, err := strconv.Atoi(minStr); err == nil {
-				filters.NumberRange.Min = min
-			}
-		}
-		if maxStr != "" {
-			if max, err := strconv.Atoi(maxStr); err == nil {
-				filters.NumberRange.Max = max
-			}
-		}
-	}
-
-	// Set defaults
-	if filters.Language == "" {
-		filters.Language = "all"
-	}
-	if filters.SortBy == "" {
-		filters.SortBy = "relevance"
-	}
-
-	return filters
-}
-
-func calculateRelevanceScore(arabText, idText string, query string, queryWords []string) int {
-	score := 0
-
-	// Exact match gets highest score (only check once)
-	if strings.Contains(arabText, query) || strings.Contains(idText, query) {
-		score += 100
-	}
-
-	// Check for partial matches (optimized with pre-split words)
-	for _, word := range queryWords {
-		if len(word) > 2 {
-			if strings.Contains(arabText, word) {
-				score += 20
-			}
-			if strings.Contains(idText, word) {
-				score += 15
-			}
-		}
-	}
-
-	// Boost score if query is in ID (Indonesian translation) - combined with above
-	if strings.Contains(idText, query) {
-		score += 30
-	}
-
-	// Boost score if query is in Arabic - combined with above
-	if strings.Contains(arabText, query) {
-		score += 25
-	}
-
-	return score
-}
-
-func matchesFilter(arabText, idText string, hadithNumber int, slug string, filters SearchFilters, query string, queryWords []string) bool {
-	// Collection filter (early exit)
-	if len(filters.Collections) > 0 {
-		found := false
-		for _, col := range filters.Collections {
-			if strings.EqualFold(col, slug) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	// Query match check - optimized with pre-lowered text and query
-	queryMatched := false
-	if filters.Language == "ar" {
-		queryMatched = strings.Contains(arabText, query)
-	} else if filters.Language == "id" {
-		queryMatched = strings.Contains(idText, query)
-	} else {
-		// Default "all" or anything else: check both
-		queryMatched = strings.Contains(arabText, query) || strings.Contains(idText, query)
-	}
-
-	// Also check individual words for better matching (word-level search)
-	if !queryMatched && len(queryWords) > 0 {
-		for _, word := range queryWords {
-			if len(word) > 2 {
-				if strings.Contains(arabText, word) || strings.Contains(idText, word) {
-					queryMatched = true
-					break
-				}
-			}
-		}
-	}
-
-	if !queryMatched {
-		return false
-	}
-
-	// Number range filter (early exit)
-	if filters.NumberRange.Min > 0 && hadithNumber < filters.NumberRange.Min {
-		return false
-	}
-	if filters.NumberRange.Max > 0 && hadithNumber > filters.NumberRange.Max {
-		return false
-	}
-
-	return true
-}
-
-func sortResults(results []SearchResult, sortBy string) {
-	switch sortBy {
-	case "number":
-		// Sort by hadith number within collections
-		sort.Slice(results, func(i, j int) bool {
-			if results[i].Slug != results[j].Slug {
-				return results[i].Slug < results[j].Slug
-			}
-			return results[i].Hadith.Number < results[j].Hadith.Number
-		})
-	case "collection":
-		// Sort by collection name
-		sort.Slice(results, func(i, j int) bool {
-			return results[i].Slug < results[j].Slug
-		})
-	default: // relevance
-		sort.Slice(results, func(i, j int) bool {
-			return results[i].Score > results[j].Score
-		})
-	}
-}
-
-// Disk-based search - loads collections from disk on-demand (minimal memory usage)
-func performAdvancedSearch(filters SearchFilters) []SearchResult {
-	lowerQuery := strings.ToLower(filters.Query)
-	queryWords := strings.Fields(lowerQuery)
-
-	// Pre-allocate results slice with memory limit
-	maxResults := 500
-	allResults := make([]SearchResult, 0, 100)
-
-	data.mu.RLock()
-	defer data.mu.RUnlock()
-
-	// Get collections to search (based on filter)
-	var collectionsToSearch []CollectionInfo
-	if len(filters.Collections) > 0 {
-		// Filter collections
-		for _, col := range filters.Collections {
-			for _, info := range data.Info {
-				if strings.EqualFold(col, info.Slug) {
-					collectionsToSearch = append(collectionsToSearch, info)
-					break
-				}
-			}
-		}
-	} else {
-		// Search all collections
-		collectionsToSearch = data.Info
-	}
-
-	// Search each collection (disk-based)
-	for _, info := range collectionsToSearch {
-		// Load collection from disk on-demand
-		collection, err := loadCollection(info.Slug)
-		if err != nil {
-			log.Printf("Error loading collection %s: %v", info.Slug, err)
-			continue
-		}
-
-		// Search within this collection
-		for _, hadith := range collection {
-			// Limit results
-			if len(allResults) >= maxResults {
-				break
-			}
-
-			// Pre-lower texts
-			lowerArab := strings.ToLower(hadith.Arab)
-			lowerID := strings.ToLower(hadith.ID)
-
-			// Check if matches filters
-			if matchesFilter(lowerArab, lowerID, hadith.Number, info.Slug, filters, lowerQuery, queryWords) {
-				// Calculate score
-				score := calculateRelevanceScore(lowerArab, lowerID, lowerQuery, queryWords)
-
-				// Get context
-				context := hadith.ID
-				if len(context) > 300 {
-					context = context[:300] + "..."
-				}
-
-				allResults = append(allResults, SearchResult{
-					Collection: info.Name,
-					Slug:       info.Slug,
-					Hadith:     hadith,
-					Context:    context,
-					Score:      score,
-				})
-			}
-		}
-
-		// Early exit if we have enough results
-		if len(allResults) >= maxResults {
-			break
-		}
-	}
-
-	// Sort results
-	if len(allResults) > 0 {
-		sortResults(allResults, filters.SortBy)
-	}
-
-	return allResults
-}
-
-// Helper function to get page URL
-func getPageURL(baseURL string, page int) string {
-	if page == 1 {
-		return baseURL
-	}
-	separator := "?"
-	if strings.Contains(baseURL, "?") {
-		separator = "&"
-	}
-	return baseURL + separator + "page=" + strconv.Itoa(page)
-}
-
-func robotsHandler(w http.ResponseWriter, r *http.Request) {
-	content := "User-agent: *\nAllow: /\nSitemap: https://hadits.online/sitemap.xml"
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte(content))
-}
-
-func sitemapHandler(w http.ResponseWriter, r *http.Request) {
-	var sb strings.Builder
-	sb.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-	sb.WriteString("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
-
-	// Home
-	sb.WriteString("  <url>\n    <loc>https://hadits.online/</loc>\n    <priority>1.0</priority>\n  </url>\n")
-	sb.WriteString("  <url>\n    <loc>https://hadits.online/donate</loc>\n    <priority>0.5</priority>\n  </url>\n")
-	sb.WriteString("  <url>\n    <loc>https://hadits.online/faq</loc>\n    <priority>0.5</priority>\n  </url>\n")
-
-	// Collections (disk-based - load each collection individually)
-	data.mu.RLock()
-	for _, info := range data.Info {
-		sb.WriteString(fmt.Sprintf("  <url>\n    <loc>https://hadits.online/collection/%s</loc>\n    <priority>0.8</priority>\n  </url>\n", info.Slug))
-
-		// Load collection for individual hadith URLs
-		collection, err := loadCollection(info.Slug)
-		if err != nil {
-			log.Printf("Error loading collection %s for sitemap: %v", info.Slug, err)
-			continue
-		}
-
-		// Individual Hadiths (limited to first 100 to keep sitemap small and fast)
-		// You can increase this if needed, but for disk-based mode, limiting is better
-		limit := 100
-		for i, h := range collection {
-			if i >= limit {
-				break
-			}
-			sb.WriteString(fmt.Sprintf("  <url>\n    <loc>https://hadits.online/collection/%s/%d</loc>\n    <priority>0.6</priority>\n  </url>\n", info.Slug, h.Number))
-		}
-	}
-	data.mu.RUnlock()
-
-	sb.WriteString("</urlset>")
-	w.Header().Set("Content-Type", "application/xml")
-	w.Write([]byte(sb.String()))
-}
-
-func main() {
-	log.Println("Loading hadith data...")
-	loadData()
-	log.Println("Data loaded successfully")
-
+// newRouter registers every route and wraps them in the middleware chain.
+func newRouter() http.Handler {
 	r := mux.NewRouter()
+	r.StrictSlash(true) // "/faq/" -> 301 "/faq"
 
-	// Routes with better error handling
 	r.HandleFunc("/", homeHandler)
+	r.HandleFunc("/index.html", redirectHome)
 	r.HandleFunc("/favorites", favoritesHandler)
 	r.HandleFunc("/collection/{slug}", collectionHandler)
 	r.HandleFunc("/collection/{slug}/{number}", hadithHandler)
 	r.HandleFunc("/search", searchHandler)
 	r.HandleFunc("/api/explain", explainHandler)
 	r.HandleFunc("/donate", donateHandler)
-	r.HandleFunc("/api/midtrans/token", midtransTokenHandler)
+	r.HandleFunc("/api/midtrans/token", withCacheControl("no-store", midtransTokenHandler))
 	r.HandleFunc("/faq", faqHandler)
-	r.HandleFunc("/robots.txt", robotsHandler)
-	r.HandleFunc("/sitemap.xml", sitemapHandler)
-	r.HandleFunc("/manifest.json", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/robots.txt", withCacheControl(ccLong, robotsHandler))
+	r.HandleFunc("/sitemap.xml", withCacheControl(ccLong, sitemapHandler))
+	r.HandleFunc("/sitemap-{name:[a-z-]+}.xml", withCacheControl(ccLong, sitemapPartHandler))
+	r.HandleFunc("/manifest.json", withCacheControl(ccLong, func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/manifest.json")
-	})
-	r.HandleFunc("/service-worker.js", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/service-worker.js")
-	})
+	}))
+	r.HandleFunc("/service-worker.js", serviceWorkerHandler)
+	r.PathPrefix("/static/").Handler(staticHandler("static"))
+	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+	return securityHeaders(gzipMiddleware(r))
 
-	// Serve static files
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
+}
 
-	// Serve index.html at root
-	r.HandleFunc("/index.html", homeHandler)
+func main() {
+	log.Println("Loading hadith data...")
+	loadAssetHashes()
+	loadTemplates()
+	loadData()
+	initStore()
+	searchCache.startStatsLogger(10 * time.Minute)
+	explainLimiter.startJanitor(10 * time.Minute)
+	log.Println("Data loaded successfully")
 
-	// Add 404 handler
-	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		tmpl := template.Must(template.ParseFiles("templates/404.html", "templates/components/navbar.html", "templates/components/footer.html"))
-
-		seo := SEOData{
-			Title:       "Halaman Tidak Ditemukan - hadits.online",
-			Description: "Maaf, halaman yang Anda cari tidak dapat ditemukan.",
+	// LISTEN_ADDR (e.g. "127.0.0.1:8082") wins; otherwise ":" + PORT (default 8082).
+	addr := os.Getenv("LISTEN_ADDR")
+	if addr == "" {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8082"
 		}
+		addr = ":" + port
+	}
+	// Deployment tip: set GOMEMLIMIT (e.g. GOMEMLIMIT=200MiB) so the GC keeps
+	// the heap well inside the container's memory limit.
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           newRouter(),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      4 * time.Minute, // AI explanations can take up to 3 minutes
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 16,
+	}
 
-		tmpl.Execute(w, struct {
-			SEO  SEOData
-			Path string
-		}{SEO: seo, Path: r.URL.Path})
-	})
+	go func() {
+		log.Println("Server starting on " + addr)
+		if strings.HasPrefix(addr, ":") {
+			log.Println("Access the application at: http://localhost" + addr)
+		}
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	}()
 
-	log.Println("Server starting on :8082")
-	log.Println("Access the application at: http://localhost:8082")
-	log.Fatal(http.ListenAndServe(":8082", r))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	<-ctx.Done()
+	stop()
+	log.Println("Shutting down (waiting up to 10s for active requests)...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Shutdown: %v", err)
+	}
 }
 
 type GeminiPart struct {
@@ -996,59 +507,16 @@ type GeminiResponse struct {
 	} `json:"candidates"`
 }
 
-func explainHandler(w http.ResponseWriter, r *http.Request) {
-	if geminiApiKey == "" {
-		http.Error(w, "AI configuration missing", http.StatusServiceUnavailable)
-		return
-	}
+var (
+	explainFlight flightGroup[string]
+	// 5 uncached explanations per IP per 10 minutes, 60 per hour overall.
+	explainLimiter = newRateLimiter(5, 10*time.Minute, 60, time.Hour)
+	geminiURL      = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
+	geminiClient   = &http.Client{Timeout: 3 * time.Minute}
+)
 
-	slug := r.URL.Query().Get("slug")
-	numberStr := r.URL.Query().Get("number")
-
-	if slug == "" || numberStr == "" {
-		http.Error(w, "Missing parameters", http.StatusBadRequest)
-		return
-	}
-
-	number, _ := strconv.Atoi(numberStr)
-
-	// Load collection from disk on-demand
-	collection, err := loadCollection(slug)
-	if err != nil {
-		http.Error(w, "Error loading collection: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var hadith *Collection
-	for i, h := range collection {
-		if h.Number == number {
-			hadith = &collection[i]
-			break
-		}
-	}
-
-	if hadith == nil {
-		http.Error(w, "Hadith not found", http.StatusNotFound)
-		return
-	}
-
-	// Check if explanation already exists in cache
-	if hadith.Explanation != "" {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"explanation": hadith.Explanation,
-		})
-		return
-	}
-
-	// Get collection name
-	collectionName := slug
-	info := getCollectionInfo(slug)
-	if info != nil {
-		collectionName = info.Name
-	}
-
-	systemPrompt := `Role: Anda adalah seorang Ahli Ilmu Hadis dan Syarah (Penjelas) Hadis Digital yang akurat, objektif, dan mendalam.
+// explainSystemPrompt is the Gemini system instruction (kept verbatim).
+const explainSystemPrompt = `Role: Anda adalah seorang Ahli Ilmu Hadis dan Syarah (Penjelas) Hadis Digital yang akurat, objektif, dan mendalam.
 
 Task: Tugas Anda adalah membedah teks hadis yang diberikan pengguna ke dalam struktur penjelasan yang baku dan mudah dipahami.
 
@@ -1082,78 +550,151 @@ Guiding Principles:
 - Tetap bersandar pada literatur klasik (Turats) dan pendapat ulama otoritatif.
 - Gunakan Markdown untuk struktur yang rapi.`
 
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
+}
+
+func jsonError(w http.ResponseWriter, status int, msg string) {
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+// explainHandler returns {"explanation": "..."}: the stored explanation when one
+// exists, otherwise a freshly generated one (Gemini) that is written back to
+// resource/{slug}.json. Generation is deduplicated per hadith and rate-limited.
+func explainHandler(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	slug, numberStr := q.Get("slug"), q.Get("number")
+	if slug == "" || numberStr == "" {
+		jsonError(w, http.StatusBadRequest, "Missing parameters")
+		return
+	}
+	// Only slugs from list.json are accepted (no path traversal).
+	c, ok := getBySlug(slug)
+	if !ok {
+		jsonError(w, http.StatusNotFound, "Collection not found")
+		return
+	}
+	number, err := strconv.Atoi(numberStr)
+	if err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid hadith number")
+		return
+	}
+	idx, found := c.indexOf(number)
+	if !found {
+		jsonError(w, http.StatusNotFound, "Hadith not found")
+		return
+	}
+	hadith, err := c.read(idx)
+	if err != nil {
+		log.Printf("explain %s/%d: %v", slug, number, err)
+		jsonError(w, http.StatusInternalServerError, "Error loading hadith")
+		return
+	}
+
+	// Already explained: serve it (no AI call, cacheable).
+	if hadith.Explanation != "" {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		writeJSON(w, http.StatusOK, map[string]string{"explanation": hadith.Explanation})
+		return
+	}
+
+	if geminiApiKey == "" {
+		jsonError(w, http.StatusServiceUnavailable, "AI configuration missing")
+		return
+	}
+
+	key := slug + "/" + strconv.Itoa(number)
+	// Requests that join an in-flight generation don't spend rate-limit tokens.
+	if !explainFlight.InFlight(key) && !explainLimiter.allow(clientIP(r), time.Now()) {
+		jsonError(w, http.StatusTooManyRequests, "Batas permintaan AI tercapai, coba beberapa menit lagi.")
+		return
+	}
+
+	explanation, err, _ := explainFlight.Do(key, func() (string, error) {
+		return generateExplanation(c, hadith)
+	})
+	if err != nil {
+		log.Printf("explain %s: %v", key, err)
+		jsonError(w, http.StatusBadGateway, "Error calling AI API")
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, map[string]string{"explanation": explanation})
+}
+
+// generateExplanation calls Gemini and persists the result. It uses its own
+// timeout context (not the request's) because the result is shared by every
+// deduplicated caller and is saved even if the first client disconnects.
+func generateExplanation(c *collStore, hadith Collection) (string, error) {
+	// Another flight may have finished between our read and now.
+	if idx, ok := c.indexOf(hadith.Number); ok {
+		if cur, err := c.read(idx); err == nil && cur.Explanation != "" {
+			return cur.Explanation, nil
+		}
+	}
+
 	userPrompt := fmt.Sprintf("Kitab: %s\nNomor: %d \n\nArab:\n%s",
-		collectionName, hadith.Number, hadith.Arab)
+		c.Info.Name, hadith.Number, hadith.Arab)
 
 	geminiReq := GeminiRequest{
 		Contents: []GeminiContent{
 			{Parts: []GeminiPart{{Text: userPrompt}}},
 		},
 		SystemInstruction: GeminiContent{
-			Parts: []GeminiPart{{Text: systemPrompt}},
+			Parts: []GeminiPart{{Text: explainSystemPrompt}},
 		},
 	}
+	jsonData, err := json.Marshal(geminiReq)
+	if err != nil {
+		return "", err
+	}
 
-	jsonData, _ := json.Marshal(geminiReq)
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent")
-	req, _ := http.NewRequest("POST", url, strings.NewReader(string(jsonData)))
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, geminiURL, bytes.NewReader(jsonData))
+	if err != nil {
+		return "", err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("x-goog-api-key", geminiApiKey)
 
-	client := &http.Client{Timeout: 3 * time.Minute}
-	resp, err := client.Do(req)
+	resp, err := geminiClient.Do(req)
 	if err != nil {
-		http.Error(w, "Error calling AI API", http.StatusInternalServerError)
-		return
+		return "", fmt.Errorf("gemini request: %w", err)
 	}
-	fmt.Println(resp)
 	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	if err != nil {
+		return "", fmt.Errorf("gemini read: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		snippet := string(body)
+		if len(snippet) > 500 {
+			snippet = snippet[:500] + "..."
+		}
+		return "", fmt.Errorf("gemini status %d: %s", resp.StatusCode, snippet)
+	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
 	var geminiResp GeminiResponse
 	if err := json.Unmarshal(body, &geminiResp); err != nil {
-		log.Printf("Gemini parsing error: %v, Body: %s", err, string(body))
-		http.Error(w, "Error parsing AI response", http.StatusInternalServerError)
-		return
+		return "", fmt.Errorf("gemini parse: %w", err)
 	}
-
 	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		http.Error(w, "No response from AI", http.StatusInternalServerError)
-		return
+		return "", errors.New("no response from AI")
 	}
-
 	explanation := geminiResp.Candidates[0].Content.Parts[0].Text
-
-	// Save explanation to disk (disk-based approach)
-	updatedCollection, err := loadCollection(slug)
-	if err != nil {
-		log.Printf("Error reloading collection for update: %v", err)
-	} else {
-		// Find and update the hadith
-		for i := range updatedCollection {
-			if updatedCollection[i].Number == number {
-				updatedCollection[i].Explanation = explanation
-				break
-			}
-		}
-
-		// Save updated collection to disk
-		filename := "resource/" + slug + ".json"
-		jsonData, err := json.MarshalIndent(updatedCollection, "", "  ")
-		if err != nil {
-			log.Printf("Error marshaling collection %s for caching: %v", slug, err)
-		} else {
-			err = ioutil.WriteFile(filename, jsonData, 0644)
-			if err != nil {
-				log.Printf("Error writing cache to %s: %v", filename, err)
-			}
-		}
+	if strings.TrimSpace(explanation) == "" {
+		return "", errors.New("empty response from AI")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"explanation": explanation,
-	})
+	if err := c.setExplanation(hadith.Number, explanation); err != nil {
+		// Still return the text; it just won't be cached on disk.
+		log.Printf("Error saving explanation %s/%d: %v", c.Info.Slug, hadith.Number, err)
+	}
+	return explanation, nil
 }
 
 // Donation page handler
@@ -1162,9 +703,8 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 		Title:       "Donasi & Dukung Kami - hadits.online",
 		Description: "Bantu kami menjaga keberlangsungan layanan Hadits.online agar tetap gratis bagi umat Islam.",
 		Keywords:    "donasi islam, dukung dakwah digital, hadits online",
-		OGUrl:       "https://hadits.online/donate",
-		Canonical:   "https://hadits.online/donate",
-	}
+		Canonical:   siteURL + "/donate",
+	}.withDefaults()
 
 	pageData := struct {
 		SEO         SEOData
@@ -1176,20 +716,10 @@ func donateHandler(w http.ResponseWriter, r *http.Request) {
 		Environment: midtransEnvironment,
 	}
 
-	tmpl := template.Must(template.New("donate.html").Funcs(template.FuncMap{
-		"add":                 add,
-		"add1":                add1,
-		"subtract":            subtract,
-		"multiply":            multiply,
-		"pageNumbers":         pageNumbers,
-		"formatRupiah":        formatRupiah,
-		"calculatePercentage": calculatePercentage,
-		"safeHTML":            safeHTML,
-	}).ParseFiles("templates/donate.html", "templates/components/navbar.html", "templates/components/footer.html"))
-
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+	if cacheable(w, r, ccNoCache) {
+		return
 	}
+	render(w, "donate.html", http.StatusOK, pageData)
 }
 
 // Midtrans Snap token handler
@@ -1200,8 +730,8 @@ func midtransTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var reqBody struct {
-		Amount   int    `json:"amount"`
-		DonorName string `json:"donor_name"`
+		Amount     int    `json:"amount"`
+		DonorName  string `json:"donor_name"`
 		DonorEmail string `json:"donor_email"`
 		DonorPhone string `json:"donor_phone"`
 	}
@@ -1250,7 +780,7 @@ func midtransTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]string{
-		"token":   token,
+		"token":    token,
 		"order_id": orderID,
 	}
 
@@ -1264,23 +794,16 @@ func faqHandler(w http.ResponseWriter, r *http.Request) {
 		Title:       "Pertanyaan Umum (FAQ) - hadits.online",
 		Description: "Jawaban atas pertanyaan yang sering diajukan mengenai penggunaan dan fitur Hadits.online.",
 		Keywords:    "faq hadits online, bantuan hadits",
-		OGUrl:       "https://hadits.online/faq",
-		Canonical:   "https://hadits.online/faq",
-	}
+		Canonical:   siteURL + "/faq",
+		JSONLD:      faqJSONLD(),
+	}.withDefaults()
 
 	pageData := PageData{
 		SEO: seo,
 	}
 
-	tmpl := template.Must(template.New("faq.html").Funcs(template.FuncMap{
-		"add":         add,
-		"add1":        add1,
-		"subtract":    subtract,
-		"multiply":    multiply,
-		"pageNumbers": pageNumbers,
-	}).ParseFiles("templates/faq.html", "templates/components/navbar.html", "templates/components/footer.html"))
-
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+	if cacheable(w, r, ccPage) {
+		return
 	}
+	render(w, "faq.html", http.StatusOK, pageData)
 }

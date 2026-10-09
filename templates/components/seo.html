@@ -1,0 +1,29 @@
+{{define "seo"}}
+    <title>{{.SEO.Title}}</title>
+    <meta name="description" content="{{.SEO.Description}}">
+    {{- if .SEO.Keywords}}
+    <meta name="keywords" content="{{.SEO.Keywords}}">{{end}}
+    {{- if .SEO.Robots}}
+    <meta name="robots" content="{{.SEO.Robots}}">{{end}}
+    {{- if .SEO.Canonical}}
+    <link rel="canonical" href="{{.SEO.Canonical}}">{{end}}
+    {{- if .SEO.PrevURL}}
+    <link rel="prev" href="{{.SEO.PrevURL}}">{{end}}
+    {{- if .SEO.NextURL}}
+    <link rel="next" href="{{.SEO.NextURL}}">{{end}}
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:site_name" content="hadits.online">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:type" content="{{.SEO.OGType}}">
+    {{- if .SEO.OGUrl}}
+    <meta property="og:url" content="{{.SEO.OGUrl}}">{{end}}
+    <meta property="og:title" content="{{.SEO.Title}}">
+    <meta property="og:description" content="{{.SEO.Description}}">
+    <meta property="og:image" content="{{.SEO.OGImage}}">
+    <meta property="og:image:alt" content="{{.SEO.OGImageAlt}}">
+    <meta name="twitter:card" content="summary">
+    {{- /* twitter:title/description/image fall back to the og:* tags */}}
+    {{- with .SEO.JSONLD}}
+    <script type="application/ld+json">{{.}}</script>{{end}}
+{{end}}

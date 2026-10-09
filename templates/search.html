@@ -3,12 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.SEO.Title}}</title>
-    <meta name="description" content="{{.SEO.Description}}">
-    <meta name="keywords" content="{{.SEO.Keywords}}">
-    <link rel="canonical" href="{{.SEO.Canonical}}">
-    <link rel="icon" type="image/png" href="/static/logo.png">
-    <meta name="robots" content="noindex, follow">
+    {{template "seo" .}}
+    <link rel="icon" type="image/png" href="{{asset "logo.png"}}">
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
@@ -16,34 +12,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Hadits">
-    <link rel="apple-touch-icon" href="/static/logo.png">
-    
+    <link rel="apple-touch-icon" href="{{asset "logo.png"}}">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3507800618218715" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .arabic-text {
-            font-family: 'Noto Naskh Arabic', serif;
-            line-height: 2.5;
-            font-size: 1.25rem;
-        }
-        .indonesian-text {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.8;
-        }
-        .highlight {
-            background-color: #fef3c7;
-            padding: 2px 4px;
-            border-radius: 2px;
-        }
-        .filter-checkbox:checked + label {
-            background-color: #10b981;
-            color: white;
-        }
-    </style>
+    <link rel="stylesheet" href="{{asset "style.css"}}">
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
@@ -51,49 +27,52 @@
 
     <!-- Hero Header -->
     <section class="bg-emerald-900 text-white py-12 md:py-16 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" 
-             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        <div class="absolute inset-0 opacity-10"
+             style="background-image: url('{{asset "patter_ketupat.png"}}'); background-size: 100px; background-repeat: repeat;">
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
-        
+
         <div class="container mx-auto px-4 relative z-10 text-center">
             <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Hasil Pencarian</h1>
-            <p class="text-emerald-100/70 text-lg md:text-xl font-light">
+            <p class="text-emerald-100/90 text-lg md:text-xl font-light break-words">
                 Menampilkan hasil untuk: <span class="text-white font-bold">"{{.Query}}"</span>
                 {{if .Results}}
-                <span class="ml-2 text-emerald-400 font-bold">({{.Pagination.TotalItems}} hasil)</span>
+                <span class="ml-2 text-emerald-300 font-bold">({{.Pagination.TotalItems}} hasil)</span>
                 {{end}}
             </p>
         </div>
     </section>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-12 flex-grow">
+    <main id="main" class="container mx-auto px-4 py-12 flex-grow">
         <!-- Search Filters -->
-        <section class="mb-12 -mt-20 relative z-20">
-            <div class="bg-white rounded-[2rem] shadow-2xl p-6 md:p-10 border border-emerald-50">
-                <div class="flex items-center space-x-3 mb-8">
-                    <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-                    </div>
-                    <h3 class="text-2xl font-black text-gray-800 tracking-tight">Filter Pencarian</h3>
-                </div>
-                
-                <form id="filterForm" class="space-y-8">
+        <section class="mb-12 -mt-16 relative z-20" aria-labelledby="filterHeading">
+            <div class="bg-white rounded-[2rem] shadow-2xl p-5 md:p-10 border border-emerald-50">
+                <details class="filters" id="filterPanel"{{if .ActiveFilters}} open{{end}}>
+                <summary class="flex items-center justify-between gap-3 rounded-xl">
+                    <span class="flex items-center gap-3">
+                        <span class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                        </span>
+                        <h2 id="filterHeading" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">Filter Pencarian{{if .ActiveFilters}} <span class="text-base font-bold text-emerald-700">({{.ActiveFilters}} aktif)</span>{{end}}</h2>
+                    </span>
+                    <svg class="chev w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <form id="filterForm" action="/search" method="get" role="search" class="space-y-8 mt-8">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <!-- Query -->
                         <div class="lg:col-span-2">
-                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Kata Kunci</label>
-                            <input type="text" name="q" value="{{.Query}}" 
-                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800"
+                            <label for="f-q" class="f-label">Kata Kunci</label>
+                            <input id="f-q" type="search" name="q" value="{{.Query}}" enterkeyhint="search" autocomplete="off"
+                                   class="f-input"
                                    placeholder="Masukkan kata kunci...">
                         </div>
 
                         <!-- Language -->
                         <div>
-                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Bahasa</label>
-                            <select name="lang" 
-                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800 font-medium">
+                            <label for="f-lang" class="f-label">Bahasa</label>
+                            <select id="f-lang" name="lang"
+                                    class="f-input">
                                 <option value="all" {{if eq .Filters.Language "all"}}selected{{end}}>Semua Bahasa</option>
                                 <option value="ar" {{if eq .Filters.Language "ar"}}selected{{end}}>Arab</option>
                                 <option value="id" {{if eq .Filters.Language "id"}}selected{{end}}>Indonesia</option>
@@ -102,9 +81,9 @@
 
                         <!-- Sort By -->
                         <div>
-                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Urutkan</label>
-                            <select name="sort" 
-                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800 font-medium">
+                            <label for="f-sort" class="f-label">Urutkan</label>
+                            <select id="f-sort" name="sort"
+                                    class="f-input">
                                 <option value="relevance" {{if eq .Filters.SortBy "relevance"}}selected{{end}}>Paling Relevan</option>
                                 <option value="number" {{if eq .Filters.SortBy "number"}}selected{{end}}>Nomor Hadits</option>
                                 <option value="collection" {{if eq .Filters.SortBy "collection"}}selected{{end}}>Nama Kitab</option>
@@ -113,142 +92,176 @@
 
                         <!-- Min Number -->
                         <div>
-                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Nomor Hadits (Min)</label>
-                            <input type="number" name="min" value="{{if gt .Filters.NumberRange.Min 0}}{{.Filters.NumberRange.Min}}{{end}}" 
-                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800"
+                            <label for="f-min" class="f-label">Nomor Hadits (Min)</label>
+                            <input id="f-min" type="number" name="min" min="1" inputmode="numeric" value="{{if gt .Filters.NumberRange.Min 0}}{{.Filters.NumberRange.Min}}{{end}}"
+                                   class="f-input"
                                    placeholder="Min...">
                         </div>
 
                         <!-- Max Number -->
                         <div>
-                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Nomor Hadits (Max)</label>
-                            <input type="number" name="max" value="{{if gt .Filters.NumberRange.Max 0}}{{.Filters.NumberRange.Max}}{{end}}" 
-                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-gray-800"
+                            <label for="f-max" class="f-label">Nomor Hadits (Max)</label>
+                            <input id="f-max" type="number" name="max" min="1" inputmode="numeric" value="{{if gt .Filters.NumberRange.Max 0}}{{.Filters.NumberRange.Max}}{{end}}"
+                                   class="f-input"
                                    placeholder="Max...">
                         </div>
                     </div>
 
                     <!-- Collections Filter -->
-                    <div>
-                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Batasi Kitab</label>
+                    <fieldset>
+                        <legend class="f-label mb-4">Batasi Kitab</legend>
                         <div class="flex flex-wrap gap-3">
                             {{range .Collections}}
-                            <label class="relative flex items-center group cursor-pointer">
-                                <input type="checkbox" name="collections" value="{{.Slug}}" 
+                            <label class="relative flex items-center">
+                                <input type="checkbox" name="collections" value="{{.Slug}}"
                                        {{if hasFilter $.Filters.Collections .Slug}}checked{{end}}
                                        class="peer sr-only">
-                                <div class="px-5 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-500 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 peer-checked:shadow-lg transition-all group-hover:bg-gray-100 uppercase tracking-tighter">
-                                    {{.Name}}
-                                </div>
+                                <span class="chip">{{.Name}}</span>
                             </label>
                             {{end}}
                         </div>
-                    </div>
+                    </fieldset>
 
                     <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                        <button type="submit" 
+                        <button type="submit"
                                 class="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-xl transition-all transform active:scale-95 flex-1 md:flex-none">
                             Terapkan Filter
                         </button>
-                        <button type="button" onclick="clearFilters()" 
-                                class="px-10 py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-2xl transition-all flex-1 md:flex-none">
+                        <a href="{{buildFilterURL .Query (emptyFilters) 1}}"
+                           class="px-10 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition-all flex-1 md:flex-none text-center">
                             Reset
-                        </button>
+                        </a>
                     </div>
                 </form>
+                </details>
             </div>
         </section>
 
-        {{if .Results}}
-        <!-- Search Results -->
-        <section class="space-y-10 mb-12" id="search-results">
-            {{range .Results}}
-            <div class="bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all border border-gray-100 overflow-hidden group">
-                <div class="p-8 md:p-10">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                        <div class="flex items-center space-x-4">
-                            <span class="px-4 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase tracking-widest">
-                                {{.Collection}}
-                            </span>
-                            <h3 class="text-2xl font-black text-gray-800 tracking-tight">Hadits Nomor {{.Hadith.Number}}</h3>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            {{if gt .Score 100}}
-                            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-black rounded-full uppercase tracking-tighter shadow-sm border border-yellow-200">Sangat Relevan</span>
-                            {{else if gt .Score 50}}
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-black rounded-full uppercase tracking-tighter shadow-sm border border-blue-200">Relevan</span>
-                            {{end}}
-                            <a href="/collection/{{.Slug}}/{{.Hadith.Number}}" 
-                               class="inline-flex items-center px-5 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-bold text-sm transition-all shadow-lg">
-                                Baca 
-                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
-                            </a>
-                        </div>
+        {{if .DirectHit}}
+        <!-- Direct number hit -->
+        <section class="mb-10" aria-labelledby="directHitHeading" data-direct-hit="{{.DirectHit.Slug}}/{{.DirectHit.Hadith.Number}}">
+            <div class="bg-emerald-50 rounded-[2rem] shadow-xl border-2 border-emerald-300 p-8 md:p-10">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                    <div>
+                        <p class="text-xs font-black text-emerald-700 uppercase tracking-widest mb-1">Hadits yang Anda cari</p>
+                        <h2 id="directHitHeading" class="text-2xl font-black text-gray-800 tracking-tight">HR. {{.DirectHit.Collection}} No. {{.DirectHit.Hadith.Number}}</h2>
                     </div>
-                    
-                    <div class="space-y-10">
-                        <div class="arabic-text text-right text-gray-800 leading-loose text-2xl md:text-4xl relative max-h-60 overflow-hidden">
-                            {{.Hadith.Arab}}
-                            <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent"></div>
-                        </div>
-                        <div class="indonesian-text text-gray-600 text-base md:text-lg leading-relaxed searchable-content border-l-4 border-emerald-50 pl-8 py-2">
-                            {{.Context | formatHadith}}
-                        </div>
+                    <a href="/collection/{{.DirectHit.Slug}}/{{.DirectHit.Hadith.Number}}"
+                       class="inline-flex items-center justify-center px-6 py-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-bold text-sm transition-all shadow-lg">
+                        Baca Hadits
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
+                    </a>
+                </div>
+                <div lang="ar" dir="rtl" class="arabic-text text-gray-800 mb-6">{{.DirectHit.ArabSnippet}}</div>
+                <div class="indonesian-text text-gray-700">{{.DirectHit.Snippet}}</div>
+            </div>
+        </section>
+        {{end}}
+
+        {{if .DirectOnly}}
+        <!-- The query is a hadith reference: no loose text matches, but the text search stays one click away -->
+        <section class="mb-12 text-center" data-direct-only="1">
+            <p class="text-gray-700 text-lg">
+                Ingin mencari teks "<span class="font-bold">{{.Query}}</span>" di semua hadits?
+                <a href="{{.TextSearchURL}}" class="inline-flex items-center min-h-[44px] px-2 text-emerald-700 font-bold underline underline-offset-4">Cari teks</a>
+            </p>
+        </section>
+        {{else if .Results}}
+        <!-- Search Results -->
+        <section class="space-y-10 mb-12" id="search-results" aria-labelledby="resultsHeading" data-total="{{.TotalItems}}">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <h2 id="resultsHeading" class="text-lg font-bold text-gray-700">
+                    Menampilkan {{.From}}–{{.To}} dari {{.TotalItems}} hasil
+                </h2>
+            </div>
+            {{if .Partial}}
+            <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl px-6 py-4" role="status" data-partial="1">
+                Tidak ada hadits yang memuat semua kata kunci; menampilkan hasil yang memuat sebagian.
+            </div>
+            {{else if .Mixed}}
+            <div class="bg-sky-50 border border-sky-200 text-sky-900 rounded-2xl px-6 py-4" role="status" data-mixed="1">
+                Hanya sedikit hadits yang memuat semua kata kunci; hasil lain yang memuat sebagian kata kunci ikut ditampilkan.
+            </div>
+            {{end}}
+            {{range .Results}}
+            <article class="rc">
+                <div class="rc-head">
+                    <div class="rc-meta">
+                        <span class="rc-kitab">{{.Collection}}</span>
+                        <h3 class="rc-title"><a href="/collection/{{.Slug}}/{{.Hadith.Number}}">Hadits Nomor {{.Hadith.Number}}</a></h3>
+                    </div>
+                    <div class="rc-acts">
+                        {{if ge .Relative 0.75}}<span class="rc-badge hi">Sangat Relevan</span>{{else if ge .Relative 0.4}}<span class="rc-badge mid">Relevan</span>{{end}}
+                        <a href="/collection/{{.Slug}}/{{.Hadith.Number}}" class="btn-read" aria-label="Baca hadits {{.Collection}} nomor {{.Hadith.Number}}">Baca <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg></a>
                     </div>
                 </div>
-            </div>
+                <div lang="ar" dir="rtl" class="arabic-text rc-ar">{{.ArabSnippet}}</div>
+                <div class="indonesian-text rc-id">{{.Snippet}}</div>
+            </article>
             {{end}}
         </section>
 
         <!-- Pagination -->
         {{if gt .Pagination.TotalPages 1}}
-        <section class="flex justify-center mb-16">
-            <div class="inline-flex bg-white rounded-2xl shadow-xl p-2 border border-emerald-50 space-x-1">
+        <nav class="flex justify-center mb-16" aria-label="Paginasi hasil pencarian">
+            <div class="inline-flex flex-wrap justify-center bg-white rounded-2xl shadow-xl p-2 border border-emerald-50 gap-1">
                 {{if .Pagination.HasPrev}}
-                    <a href="{{buildFilterURL $.Query $.Filters 1}}" 
-                       class="px-4 py-2 text-gray-400 hover:text-emerald-600 transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                    <a href="{{buildFilterURL $.Query $.Filters 1}}" aria-label="Halaman pertama"
+                       class="px-4 py-3 text-gray-600 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
                     </a>
                 {{end}}
-                
+
                 {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
                     {{if eq $i $.Pagination.CurrentPage}}
-                        <span class="px-5 py-2 bg-emerald-600 text-white font-black rounded-xl shadow-lg">{{$i}}</span>
+                        <span aria-current="page" class="px-5 py-3 bg-emerald-600 text-white font-black rounded-xl shadow-lg">{{$i}}</span>
                     {{else}}
-                        <a href="{{buildFilterURL $.Query $.Filters $i}}" 
-                           class="px-5 py-2 text-gray-600 font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition">
+                        <a href="{{buildFilterURL $.Query $.Filters $i}}" aria-label="Halaman {{$i}}"
+                           class="px-5 py-3 text-gray-700 font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-700 transition">
                             {{$i}}
                         </a>
                     {{end}}
                 {{end}}
-                
+
                 {{if .Pagination.HasNext}}
-                    <a href="{{buildFilterURL $.Query $.Filters (add .Pagination.CurrentPage 1)}}" 
-                       class="px-4 py-2 text-emerald-600 hover:text-emerald-500 transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                    <a href="{{buildFilterURL $.Query $.Filters (add .Pagination.CurrentPage 1)}}" aria-label="Halaman berikutnya"
+                       class="px-4 py-3 text-emerald-700 hover:text-emerald-600 rounded-xl hover:bg-emerald-50 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
                     </a>
                 {{end}}
             </div>
-        </section>
+        </nav>
         {{end}}
 
         {{else}}
         <!-- No Results -->
-        <section class="text-center py-20 bg-white rounded-[3rem] shadow-2xl border border-dashed border-emerald-100 max-w-4xl mx-auto px-10 mb-12">
-            <div class="w-24 h-24 bg-red-50 text-red-200 rounded-full flex items-center justify-center mx-auto mb-8">
+        <section class="text-center py-16 bg-white rounded-[3rem] shadow-2xl border border-dashed border-emerald-200 max-w-4xl mx-auto px-6 md:px-10 mb-12" data-total="0">
+            <div class="w-24 h-24 bg-red-50 text-red-300 rounded-full flex items-center justify-center mx-auto mb-8" aria-hidden="true">
                 <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <h3 class="text-4xl font-black text-gray-800 mb-4 tracking-tight">Tidak Ditemukan</h3>
-            <p class="text-gray-500 text-xl mb-12 leading-relaxed">
-                Kami tidak menemukan hadits yang cocok dengan kata kunci "<span class="text-red-500 font-bold">{{.Query}}</span>".
+            <h2 class="text-3xl md:text-4xl font-black text-gray-800 mb-4 tracking-tight">Tidak Ditemukan</h2>
+            <p class="text-gray-600 text-lg md:text-xl mb-8 leading-relaxed break-words">
+                Kami tidak menemukan hadits yang cocok dengan kata kunci "<span class="text-red-600 font-bold">{{.Query}}</span>".
             </p>
+            <ul class="text-left text-gray-700 max-w-xl mx-auto mb-8 space-y-2 list-disc pl-6">
+                <li>Coba gunakan lebih sedikit kata kunci.</li>
+                <li>Bahasa Indonesia atau Arab (tanpa harakat) sama-sama bisa dicari.</li>
+                <li>Coba ejaan lain, misalnya <em>sholat</em> → <em>shalat</em>.</li>
+                {{if or .Filters.Collections (gt .Filters.NumberRange.Min 0) (gt .Filters.NumberRange.Max 0) (ne .Filters.Language "all")}}
+                <li>Filter sedang aktif — <a class="text-emerald-700 font-bold underline" href="{{buildFilterURL .Query (emptyFilters) 1}}">hapus filter</a>.</li>
+                {{end}}
+            </ul>
+            <div class="mb-10">
+                <p class="text-sm font-bold text-gray-600 uppercase tracking-widest mb-3">Pencarian populer</p>
+                <div class="flex flex-wrap justify-center gap-2">
+                    {{range popularQueries}}
+                    <a href="{{buildFilterURL . (emptyFilters) 1}}" class="px-4 py-2 bg-emerald-50 text-emerald-800 rounded-full font-semibold hover:bg-emerald-100 transition">{{.}}</a>
+                    {{end}}
+                </div>
+            </div>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onclick="clearFilters()" 
-                        class="px-10 py-5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-black rounded-2xl transition-all shadow-sm">
-                    🔄 Atur Ulang Filter
-                </button>
-                <a href="/" class="px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-xl hover:scale-105">
-                    🏠 Kembali Beranda
+                <a href="/" class="px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-xl">
+                    Kembali ke Beranda
                 </a>
             </div>
         </section>
@@ -258,34 +271,18 @@
     <!-- Footer -->
     {{template "footer" .}}
 
-    <script src="/static/script.js"></script>
+    <script src="{{asset "script.js"}}"></script>
     <script>
-        function clearFilters() {
-            window.location.href = '/search?q=' + encodeURIComponent('{{.Query}}');
+        // Filters start expanded on tablet/desktop, collapsed on phones (unless active).
+        if (window.matchMedia && window.matchMedia('(min-width: 768px)').matches) {
+            document.getElementById('filterPanel').open = true;
         }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            {{if .Query}}
-            // Using a simpler highlighting if the script.js one is too complex
-            const searchTerm = '{{.Query}}';
-            if (searchTerm) {
-                const elements = document.querySelectorAll('.searchable-content');
-                const regex = new RegExp(`(${searchTerm})`, 'gi');
-
-                elements.forEach(element => {
-                    const originalText = element.textContent;
-                    const highlightedText = originalText.replace(regex, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>');
-                    element.innerHTML = highlightedText;
-                });
-            }
-            {{end}}
-        });
-
-        // Ensure filter form preserves the query
-        document.getElementById('filterForm').addEventListener('submit', function(e) {
-            // Optional: You could do some JS-based param building here if needed,
-            // but standard form submission should work fine with named inputs.
-        });
+        // Kept for compatibility: the Reset link already does this without JS.
+        function clearFilters() {
+            const params = new URLSearchParams();
+            params.set('q', document.getElementById('f-q').value);
+            window.location.href = '/search?' + params.toString();
+        }
     </script>
 </body>
 </html>

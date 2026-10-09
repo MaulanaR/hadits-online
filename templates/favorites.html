@@ -3,38 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.SEO.Title}}</title>
-    <meta name="description" content="{{.SEO.Description}}">
-    <meta name="keywords" content="{{.SEO.Keywords}}">
-    <link rel="canonical" href="{{.SEO.Canonical}}">
-    <link rel="icon" type="image/png" href="/static/logo.png">
-    <meta name="robots" content="noindex, follow">
-    
+    {{template "seo" .}}
+    <link rel="icon" type="image/png" href="{{asset "logo.png"}}">
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#064e3b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Hadits">
-    <link rel="apple-touch-icon" href="/static/logo.png">
-    
+    <link rel="apple-touch-icon" href="{{asset "logo.png"}}">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3507800618218715" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .arabic-text {
-            font-family: 'Noto Naskh Arabic', serif;
-            line-height: 2.5;
-            font-size: 1.25rem;
-        }
-        .indonesian-text {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.8;
-        }
-    </style>
+    <link rel="stylesheet" href="{{asset "style.css"}}">
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
@@ -42,21 +27,21 @@
 
     <!-- Hero Header -->
     <section class="bg-emerald-900 text-white py-12 md:py-16 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" 
-             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        <div class="absolute inset-0 opacity-10"
+             style="background-image: url('{{asset "patter_ketupat.png"}}'); background-size: 100px; background-repeat: repeat;">
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
-        
+
         <div class="container mx-auto px-4 relative z-10 text-center">
             <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Hadits Favorit</h1>
-            <p class="text-emerald-100/70 text-lg md:text-xl font-light">
+            <p class="text-emerald-100/90 text-lg md:text-xl font-light">
                 <span id="favorites-count-hero" class="text-white font-bold">0</span> Hadits Yang Anda Simpan
             </p>
         </div>
     </section>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-12 flex-grow">
+    <main id="main" class="container mx-auto px-4 py-12 flex-grow">
         <!-- Action Toolbar -->
         <section class="mb-12 -mt-20 relative z-20">
             <div class="bg-white rounded-2xl shadow-xl p-4 md:p-6 border border-emerald-50 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -64,15 +49,15 @@
                     Koleksi Pribadi: <span id="favorites-count" class="text-emerald-600 font-black">0</span> Hadits
                 </div>
                 <div class="flex items-center space-x-3 w-full md:w-auto">
-                    <button onclick="exportFavorites()" 
+                    <button onclick="exportFavorites()"
                             class="flex-1 md:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         Ekspor
                     </button>
-                    <label class="flex-1 md:flex-none px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    <label class="flex-1 md:flex-none px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center focus-within:ring-4 focus-within:ring-emerald-400">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                         Impor
-                        <input type="file" accept=".json" onchange="importFavorites(this.files[0])" class="hidden">
+                        <input type="file" accept=".json" onchange="importFavorites(this.files[0])" class="sr-only">
                     </label>
                 </div>
             </div>
@@ -85,11 +70,11 @@
 
         <!-- Empty State -->
         <section id="empty-state" class="text-center py-24 bg-white rounded-[3rem] shadow-2xl border border-dashed border-emerald-100 max-w-4xl mx-auto px-10">
-            <div class="w-24 h-24 bg-emerald-50 text-emerald-200 rounded-full flex items-center justify-center mx-auto mb-8">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            <div aria-hidden="true" class="w-24 h-24 bg-emerald-50 text-emerald-300 rounded-full flex items-center justify-center mx-auto mb-8">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
             </div>
-            <h3 class="text-3xl font-black text-gray-800 mb-4 tracking-tight">Belum Ada Favorit</h3>
-            <p class="text-gray-500 text-xl mb-12 max-w-md mx-auto">
+            <h2 class="text-3xl font-black text-gray-800 mb-4 tracking-tight">Belum Ada Favorit</h2>
+            <p class="text-gray-600 text-xl mb-12 max-w-md mx-auto">
                 Simpan hadits yang berkesan bagi Anda untuk dibaca kembali kapan saja dengan mudah.
             </p>
             <a href="/" class="px-12 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-xl hover:scale-105 active:scale-95 inline-block">
@@ -101,67 +86,69 @@
     <!-- Footer -->
     {{template "footer" .}}
 
-    <script src="/static/script.js"></script>
-    <script src="/static/favorites.js"></script>
+    <script src="{{asset "script.js"}}"></script>
+    <script src="{{asset "favorites.js"}}"></script>
     <script>
         function loadFavorites() {
             const favorites = favoritesManager.getFavorites();
             const container = document.getElementById('favorites-container');
             const emptyState = document.getElementById('empty-state');
             const countElement = document.getElementById('favorites-count');
-            
+
             countElement.textContent = favorites.length;
             const heroCount = document.getElementById('favorites-count-hero');
             if (heroCount) heroCount.textContent = favorites.length;
-            
+
             if (favorites.length === 0) {
                 container.style.display = 'none';
                 emptyState.style.display = 'block';
                 return;
             }
-            
+
             container.style.display = 'block';
             emptyState.style.display = 'none';
-            
+
             container.innerHTML = favorites.map(fav => {
                 if (!fav.data) return '';
-                
+
+                // Everything from localStorage is escaped before it is put in HTML.
                 const hadithKey = fav.key;
                 const hadith = fav.data;
-                const formattedID = (hadith.id || "").replace(/\[(.*?)\]/g, '<strong>$1</strong>');
-                
+                const formattedID = escapeHTML(hadith.id || "").replace(/\[(.*?)\]/g, '<strong>$1</strong>');
+                const safeUrl = /^\/collection\/[a-z-]+\/\d+$/.test(hadith.url || '') ? hadith.url : '';
+
                 return `
                     <div class="bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all border border-gray-100 overflow-hidden group">
                         <div class="p-8 md:p-10">
                             <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                                 <div>
                                     <span class="px-4 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase tracking-widest block w-fit mb-3">
-                                        ${hadith.collectionName}
+                                        ${escapeHTML(hadith.collectionName)}
                                     </span>
-                                    <h3 class="text-2xl font-black text-gray-800 tracking-tight">Hadits Ke-${hadith.number}</h3>
-                                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Disimpan: ${new Date(hadith.savedAt).toLocaleDateString('id-ID')}</p>
+                                    <h2 class="text-2xl font-black text-gray-800 tracking-tight">Hadits Ke-${escapeHTML(hadith.number)}</h2>
+                                    <p class="text-xs font-bold text-gray-600 uppercase tracking-widest mt-2">Disimpan: ${new Date(hadith.savedAt).toLocaleDateString('id-ID')}</p>
                                 </div>
                                 <div class="flex items-center space-x-3">
-                                    <button onclick="favoritesManager.toggleFavorite('${hadithKey}')" 
-                                            class="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm active:scale-95"
-                                            title="Hapus dari Favorit">
-                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <button type="button" data-remove-key="${escapeHTML(hadithKey)}"
+                                            class="js-remove-fav p-3 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm active:scale-95"
+                                            title="Hapus dari Favorit" aria-label="Hapus ${escapeHTML(hadith.collectionName)} nomor ${escapeHTML(hadith.number)} dari favorit">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                             <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path>
                                         </svg>
                                     </button>
-                                    ${hadith.url ? `<a href="${hadith.url}" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center">
-                                        Baca 
-                                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
+                                    ${safeUrl ? `<a href="${safeUrl}" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center">
+                                        Baca
+                                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
                                     </a>` : ''}
                                 </div>
                             </div>
-                            
+
                             <div class="space-y-10">
-                                <div class="arabic-text text-right text-gray-800 leading-loose text-2xl md:text-4xl">
-                                    ${hadith.arab}
+                                <div lang="ar" dir="rtl" class="arabic-text text-right text-gray-800">
+                                    ${escapeHTML(hadith.arab)}
                                 </div>
-                                <div class="indonesian-text text-gray-600 text-base md:text-lg leading-relaxed border-l-4 border-emerald-50 pl-8 py-2">
-                                    <span class="font-black text-emerald-700 uppercase text-[10px] tracking-widest block mb-2">Terjemahan</span>
+                                <div class="indonesian-text text-gray-700 text-base md:text-lg leading-relaxed border-l-4 border-emerald-50 pl-8 py-2">
+                                    <span class="font-black text-emerald-700 uppercase text-xs tracking-widest block mb-2">Terjemahan</span>
                                     ${formattedID}
                                 </div>
                             </div>
@@ -170,6 +157,21 @@
                 `;
             }).join('');
         }
+
+        function escapeHTML(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+            });
+        }
+
+        // Remove buttons use a data attribute instead of inline JS with the key.
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.js-remove-fav');
+            if (btn) {
+                favoritesManager.toggleFavorite(btn.dataset.removeKey);
+                loadFavorites();
+            }
+        });
 
         function exportFavorites() {
             favoritesManager.exportFavorites();
@@ -181,17 +183,11 @@
             setTimeout(loadFavorites, 500);
         }
 
-        function performSearch() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (query) {
-                window.location.href = '/search?q=' + encodeURIComponent(query);
-            }
-        }
 
         // Load favorites when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadFavorites();
-            
+
             // Listen for storage changes
             window.addEventListener('storage', function(e) {
                 if (e.key === 'hadith_favorites') {

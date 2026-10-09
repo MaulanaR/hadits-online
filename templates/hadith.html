@@ -3,59 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.SEO.Title}}</title>
-    <meta name="description" content="{{.SEO.Description}}">
-    <meta name="keywords" content="{{.SEO.Keywords}}">
-    <link rel="canonical" href="{{.SEO.Canonical}}">
-    <link rel="icon" type="image/png" href="/static/logo.png">
-    
+    {{template "seo" .}}
+    <link rel="icon" type="image/png" href="{{asset "logo.png"}}">
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#064e3b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Hadits">
-    <link rel="apple-touch-icon" href="/static/logo.png">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="{{.SEO.OGUrl}}">
-    <meta property="og:title" content="{{.SEO.Title}}">
-    <meta property="og:description" content="{{.SEO.Description}}">
-    <meta property="og:image" content="https://hadits.online/static/og-image.png">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="{{.SEO.OGUrl}}">
-    <meta property="twitter:title" content="{{.SEO.Title}}">
-    <meta property="twitter:description" content="{{.SEO.Description}}">
-    <meta property="twitter:image" content="https://hadits.online/static/og-image.png">
+    <link rel="apple-touch-icon" href="{{asset "logo.png"}}">
 
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3507800618218715" crossorigin="anonymous"></script>
-    
-    <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Message",
-      "name": "{{.SEO.Title}}",
-      "text": "{{.Hadith.ID}}",
-      "author": {
-        "@type": "Person",
-        "name": "{{.Info.Name}}"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "hadits.online"
-      }
-    }
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@300;400;500;600;700&family=Lateef&family=Scheherazade+New&family=Roboto:wght@300;400;700&family=Noto+Naskh+Arabic&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <!-- Only the default fonts load up front; the optional ones are injected when chosen in "Pengaturan Teks". -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{asset "style.css"}}">
     <style>
         :root {
             --arabic-size: 1.5rem;
@@ -63,12 +30,12 @@
             --arabic-font: 'Noto Naskh Arabic';
             --id-font: 'Inter';
         }
-        .arabic-text {
+        .hadith-page .arabic-text {
             font-family: var(--arabic-font), serif;
-            line-height: 2.5;
+            line-height: 2.2;
             font-size: var(--arabic-size);
         }
-        .indonesian-text {
+        .hadith-page .indonesian-text {
             font-family: var(--id-font), sans-serif;
             line-height: 1.8;
             font-size: var(--id-size);
@@ -79,52 +46,94 @@
             top: 5rem;
             right: 1rem;
             z-index: 50;
-            width: 280px;
+            width: min(280px, calc(100vw - 2rem));
         }
         .settings-panel.active {
             display: block;
         }
+        /* keep the fixed bottom navigation from covering the footer */
+        .hadith-page > footer { padding-bottom: 7rem; }
     </style>
+    <script>
+        // Optional fonts are loaded only when selected (or saved earlier).
+        var FONT_URLS = {
+            "'Amiri Quran'": 'https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap',
+            "'Scheherazade New'": 'https://fonts.googleapis.com/css2?family=Scheherazade+New&display=swap',
+            "'Lateef'": 'https://fonts.googleapis.com/css2?family=Lateef&display=swap',
+            "'Roboto'": 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap'
+        };
+        function ensureFont(value) {
+            var href = FONT_URLS[value];
+            if (!href) return;
+            var links = document.querySelectorAll('link[data-font]');
+            for (var i = 0; i < links.length; i++) {
+                if (links[i].getAttribute('href') === href) return;
+            }
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.setAttribute('data-font', value);
+            document.head.appendChild(link);
+        }
+        // Apply saved preferences before first paint.
+        (function () {
+            try {
+                var root = document.documentElement;
+                var s;
+                if ((s = localStorage.getItem('appearance_arabicSize'))) root.style.setProperty('--arabic-size', s + 'rem');
+                if ((s = localStorage.getItem('appearance_idSize'))) root.style.setProperty('--id-size', s + 'rem');
+                if ((s = localStorage.getItem('appearance_arabicFont'))) { ensureFont(s); root.style.setProperty('--arabic-font', s); }
+                if ((s = localStorage.getItem('appearance_idFont'))) { ensureFont(s); root.style.setProperty('--id-font', s); }
+            } catch (e) {}
+        })();
+    </script>
 </head>
-<body class="bg-gray-50 flex flex-col min-h-screen">
+<body class="hadith-page bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
     {{template "navbar" .}}
 
     <!-- Hero Header -->
     <section class="bg-emerald-900 text-white py-12 md:py-16 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" 
-             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        <div class="absolute inset-0 opacity-10"
+             style="background-image: url('{{asset "patter_ketupat.png"}}'); background-size: 100px; background-repeat: repeat;">
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
-        
+
         <div class="container mx-auto px-4 relative z-10 text-center">
-            <span class="px-4 py-1.5 bg-emerald-800/50 text-emerald-300 text-[10px] font-black rounded-full uppercase tracking-[0.2em] mb-4 inline-block border border-emerald-700">
-                {{.Info.Name}}
-            </span>
-            <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Hadits Ke-{{.Hadith.Number}}</h1>
-            <div class="flex justify-center items-center space-x-4 text-emerald-100/60 text-sm font-medium">
+            <nav aria-label="Breadcrumb" class="mb-4">
+                <ol class="flex flex-wrap justify-center items-center gap-2 text-sm text-emerald-100/90">
+                    <li><a href="/" class="hover:text-white underline underline-offset-4 decoration-emerald-400/40">Beranda</a></li>
+                    <li aria-hidden="true">›</li>
+                    <li><a href="/collection/{{.Info.Slug}}" class="hover:text-white underline underline-offset-4 decoration-emerald-400/40">{{.Info.Name}}</a></li>
+                    <li aria-hidden="true">›</li>
+                    <li aria-current="page" class="font-bold text-white">No. {{.Hadith.Number}}</li>
+                </ol>
+            </nav>
+            <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Hadits {{.Info.Name}} No. {{.Hadith.Number}}</h1>
+            <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-1 text-emerald-100/80 text-sm font-medium">
                 <span>{{.Info.Total}} Hadits dalam Koleksi</span>
-                <span>•</span>
-                <span>MFAB: {{.Hadith.Number}}</span>
-                <span>•</span>
-                <a href="/collection/{{$.Info.Slug}}" class="text-emerald-400 hover:text-white transition underline decoration-emerald-500/30 underline-offset-4">Kembali ke Kitab</a>
+                <span aria-hidden="true">•</span>
+                <span>Nomor: {{.Hadith.Number}}</span>
+                <span aria-hidden="true">•</span>
+                <a href="/collection/{{$.Info.Slug}}" class="text-emerald-300 hover:text-white transition underline decoration-emerald-500/30 underline-offset-4">Kembali ke Kitab</a>
             </div>
         </div>
     </section>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-12 flex-grow">
+    <!-- Main Content (pb-28 keeps the fixed bottom bar from covering content) -->
+    <main id="main" class="container mx-auto px-4 pt-12 pb-28 flex-grow">
         <!-- Hadith Content -->
-        <section class="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 -mt-20 relative z-20 border border-emerald-50">
-            <div class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-50 pb-8">
+        <section class="bg-white rounded-[2.5rem] shadow-2xl p-6 md:p-12 -mt-20 relative z-20 border border-emerald-50">
+            <div class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-100 pb-8">
                 <div>
                     <h2 class="text-xl font-black text-gray-800 tracking-tight">Detail Riwayat</h2>
-                    <p class="text-gray-400 text-sm font-medium mt-1 uppercase tracking-widest">Koleksi: {{.Info.Name}}</p>
+                    <p class="text-gray-600 text-sm font-medium mt-1 uppercase tracking-widest">Koleksi: {{.Info.Name}}</p>
                 </div>
-                
+
                 <!-- Appearance Settings Button -->
-                <button onclick="toggleSettings()" class="flex items-center space-x-3 px-6 py-3 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 rounded-2xl transition-all border border-gray-100 group no-print">
-                    <svg class="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="button" id="settingsBtn" onclick="toggleSettings()" aria-controls="settingsPanel" aria-expanded="false"
+                        class="flex items-center space-x-3 px-6 py-3 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 rounded-2xl transition-all border border-gray-100 group no-print">
+                    <svg class="w-5 h-5 text-gray-500 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                     </svg>
                     <span class="text-sm font-black uppercase tracking-tighter">Pengaturan Teks</span>
@@ -132,11 +141,11 @@
             </div>
 
             <!-- Settings Panel -->
-            <div id="settingsPanel" class="settings-panel bg-white rounded-xl shadow-2xl border border-gray-200 p-5 no-print">
+            <div id="settingsPanel" class="settings-panel bg-white rounded-xl shadow-2xl border border-gray-200 p-5 no-print" role="dialog" aria-labelledby="settingsTitle">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-gray-800">Tampilan Teks</h3>
-                    <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <h3 id="settingsTitle" class="font-bold text-gray-800">Tampilan Teks</h3>
+                    <button type="button" onclick="toggleSettings()" class="p-2 -m-2 text-gray-500 hover:text-gray-700" aria-label="Tutup pengaturan">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
@@ -146,26 +155,26 @@
                     <!-- Arabic Size -->
                     <div>
                         <div class="flex justify-between mb-2">
-                            <label class="text-xs font-semibold text-gray-500 uppercase">Ukuran Arab</label>
-                            <span id="arabicSizeLabel" class="text-xs font-bold text-emerald-600">1.5rem</span>
+                            <label for="arabicSizeRange" class="text-xs font-semibold text-gray-600 uppercase">Ukuran Arab</label>
+                            <span id="arabicSizeLabel" class="text-xs font-bold text-emerald-700">1.5rem</span>
                         </div>
-                        <input type="range" min="1" max="3" step="0.1" value="1.5" id="arabicSizeRange" 
+                        <input type="range" min="1" max="3" step="0.1" value="1.5" id="arabicSizeRange"
                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
                     </div>
 
                     <!-- Indo Size -->
                     <div>
                         <div class="flex justify-between mb-2">
-                            <label class="text-xs font-semibold text-gray-500 uppercase">Ukuran Terjemah</label>
-                            <span id="idSizeLabel" class="text-xs font-bold text-blue-600">1rem</span>
+                            <label for="idSizeRange" class="text-xs font-semibold text-gray-600 uppercase">Ukuran Terjemah</label>
+                            <span id="idSizeLabel" class="text-xs font-bold text-blue-700">1rem</span>
                         </div>
-                        <input type="range" min="0.8" max="2" step="0.1" value="1" id="idSizeRange" 
+                        <input type="range" min="0.8" max="2" step="0.1" value="1" id="idSizeRange"
                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                     </div>
 
                     <!-- Arabic Font -->
                     <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase block mb-2">Font Arab</label>
+                        <label for="arabicFontSelect" class="text-xs font-semibold text-gray-600 uppercase block mb-2">Font Arab</label>
                         <select id="arabicFontSelect" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
                             <option value="'Noto Naskh Arabic'">Noto Naskh</option>
                             <option value="'Amiri Quran'">Amiri Quran</option>
@@ -176,7 +185,7 @@
 
                     <!-- Indo Font -->
                     <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase block mb-2">Font Terjemah</label>
+                        <label for="idFontSelect" class="text-xs font-semibold text-gray-600 uppercase block mb-2">Font Terjemah</label>
                         <select id="idFontSelect" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             <option value="'Inter'">Inter</option>
                             <option value="'Roboto'">Roboto</option>
@@ -184,8 +193,8 @@
                             <option value="serif">Serif</option>
                         </select>
                     </div>
-                    
-                    <button onclick="resetSettings()" class="w-full py-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition">
+
+                    <button type="button" onclick="resetSettings()" class="w-full py-2 text-xs font-medium text-gray-600 hover:text-gray-800 transition">
                         Reset Pengaturan
                     </button>
                 </div>
@@ -193,56 +202,50 @@
 
             <div class="space-y-12">
                 <!-- Arabic Text -->
-                <div class="bg-emerald-50/30 rounded-[2rem] p-8 md:p-5 border border-emerald-50">
+                <div class="bg-emerald-50/30 rounded-[2rem] p-5 md:p-8 border border-emerald-50">
                     <div class="flex items-center space-x-3 mb-8">
-                        <div class="w-2 h-8 bg-emerald-500 rounded-full"></div>
+                        <div class="w-2 h-8 bg-emerald-500 rounded-full" aria-hidden="true"></div>
                         <h3 class="text-sm font-black text-emerald-800 uppercase tracking-widest">Matan Hadits</h3>
                     </div>
-                    <div class="arabic-text text-right text-gray-800 leading-[2.5] md:leading-[3]">
-                        {{.Hadith.Arab}}
-                    </div>
+                    <div id="arabText" lang="ar" dir="rtl" class="arabic-text text-right text-gray-800">{{.Hadith.Arab}}</div>
                 </div>
 
                 <!-- Indonesian Translation -->
-                <div class="bg-white rounded-[2rem] p-8 md:p-5 border border-gray-100 shadow-inner">
+                <div class="bg-white rounded-[2rem] p-5 md:p-8 border border-gray-100 shadow-inner">
                     <div class="flex items-center space-x-3 mb-8">
-                        <div class="w-2 h-8 bg-blue-500 rounded-full"></div>
+                        <div class="w-2 h-8 bg-blue-500 rounded-full" aria-hidden="true"></div>
                         <h3 class="text-sm font-black text-blue-800 uppercase tracking-widest">Terjemahan</h3>
                     </div>
-                    <div class="indonesian-text text-gray-600 leading-relaxed pl-4">
-                        {{.Hadith.ID | formatHadith}}
-                    </div>
+                    <div id="idText" class="indonesian-text text-gray-700 leading-relaxed md:pl-4">{{.Hadith.ID | formatHadith}}</div>
                 </div>
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex flex-wrap gap-4 pt-10 border-t border-gray-50">
-                <button onclick="toggleFavorite()" id="favorite-btn"
-                        class="favorite-btn px-4 py-2 bg-gray-100 text-gray-600 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all font-black uppercase text-xs tracking-widest shadow-sm active:scale-95 flex items-center"
+            <div class="flex flex-wrap gap-4 pt-10 border-t border-gray-100 no-print">
+                <button type="button" onclick="toggleFavorite()" id="favorite-btn" aria-pressed="false"
+                        class="px-4 py-3 bg-gray-100 text-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all font-black uppercase text-xs tracking-widest shadow-sm active:scale-95 flex items-center"
                         data-hadith-key="{{.Info.Slug}}/{{.Hadith.Number}}"
                         data-collection-name="{{.Info.Name}}"
                         data-slug="{{.Info.Slug}}"
                         data-number="{{.Hadith.Number}}"
-                        data-arab="{{.Hadith.Arab}}"
-                        data-id="{{.Hadith.ID}}"
                         data-url="/collection/{{.Info.Slug}}/{{.Hadith.Number}}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                     </svg>
                     <span id="favorite-text">Simpan</span>
                 </button>
-                
-                <button onclick="copyHadith()" 
-                        class="copy-btn px-4 py-2 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-500 transition-all font-black uppercase text-xs tracking-widest shadow-lg shadow-emerald-200 active:scale-95 flex items-center">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                <button type="button" onclick="copyHadith(event)"
+                        class="copy-btn px-4 py-3 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-500 transition-all font-black uppercase text-xs tracking-widest shadow-lg shadow-emerald-200 active:scale-95 flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                     </svg>
                     Salin
                 </button>
-                
-                <button onclick="shareCurrentHadith()" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 transition-all font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-200 active:scale-95 flex items-center">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                <button type="button" onclick="shareCurrentHadith()"
+                        class="px-4 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 transition-all font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-200 active:scale-95 flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.032-4.026A9.001 9.001 0 0112 3c-4.474 0-8.268 3.12-9.032 7.326m0 0A9.001 9.001 0 0012 21c4.474 0 8.268-3.12 9.032-7.326"></path>
                     </svg>
                     Bagikan
@@ -250,24 +253,29 @@
             </div>
 
             <!-- AI Explanation Section -->
-            <div class="pt-10 border-t border-gray-50">
+            <div class="pt-10 border-t border-gray-100" data-explain-url="/api/explain?slug={{.Info.Slug}}&amp;number={{.Hadith.Number}}" id="aiSection">
                 <div class="flex flex-col items-center">
-                    <button id="explainBtn" onclick="fetchAIExplanation()" 
-                            class="group relative inline-flex items-center justify-center px-8 py-4 font-black uppercase tracking-widest text-white transition-all duration-200 bg-emerald-900 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 shadow-xl hover:bg-emerald-800 active:scale-95">
-                        <svg class="w-5 h-5 mr-3 text-emerald-400 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button type="button" id="explainBtn" onclick="fetchAIExplanation()"
+                            class="group relative inline-flex items-center justify-center px-8 py-4 font-black uppercase tracking-widest text-white transition-all duration-200 bg-emerald-900 rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400 shadow-xl hover:bg-emerald-800 active:scale-95">
+                        <svg class="w-5 h-5 mr-3 text-emerald-400 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                         Pembahasan Lebih Rinci (AI)
                     </button>
-                    
-                    <div id="aiLoading" class="hidden mt-8 flex flex-col items-center">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-900"></div>
+
+                    <div id="aiLoading" class="hidden mt-8 flex flex-col items-center" role="status" aria-live="polite">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-900" aria-hidden="true"></div>
                         <p class="mt-4 text-emerald-800 font-bold animate-pulse">Sedang membedah hadits...</p>
                     </div>
 
-                    <div id="aiResult" class="hidden mt-10 w-full bg-emerald-50/30 rounded-[2.5rem] p-8 md:p-12 border border-emerald-100 shadow-inner">
+                    <div id="aiError" class="hidden mt-6 w-full max-w-xl bg-red-50 border border-red-200 text-red-800 rounded-2xl p-5 text-center" role="alert">
+                        <p id="aiErrorText">Terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.</p>
+                        <button type="button" onclick="fetchAIExplanation()" class="mt-3 px-5 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition">Coba lagi</button>
+                    </div>
+
+                    <div id="aiResult" class="hidden mt-10 w-full bg-emerald-50/30 rounded-[2.5rem] p-6 md:p-12 border border-emerald-100 shadow-inner">
                         <div class="flex items-center space-x-3 mb-8">
-                            <div class="w-2 h-8 bg-emerald-900 rounded-full"></div>
+                            <div class="w-2 h-8 bg-emerald-900 rounded-full" aria-hidden="true"></div>
                             <h3 class="text-sm font-black text-emerald-900 uppercase tracking-widest">Analisis Syarah Digital</h3>
                         </div>
                         <div class="prose prose-emerald max-w-none text-gray-800" id="aiContent">{{.Hadith.Explanation}}</div>
@@ -280,56 +288,110 @@
     <!-- Footer -->
     {{template "footer" .}}
 
-    <script src="/static/script.js"></script>
-    <script src="/static/favorites.js"></script>
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-emerald-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-40 no-print" aria-label="Navigasi hadits">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center gap-2">
+                {{if .PrevHadith}}
+                <a href="/collection/{{$.Info.Slug}}/{{.PrevHadith.Number}}" rel="prev"
+                   class="flex items-center text-emerald-700 hover:text-emerald-800 font-black text-xs uppercase tracking-widest px-4 py-3 bg-emerald-50 rounded-xl transition-all active:scale-95">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
+                    Hadits {{.PrevHadith.Number}}
+                </a>
+                {{else}}
+                <div class="invisible flex items-center px-4 py-3" aria-hidden="true">Placeholder</div>
+                {{end}}
+
+                <div class="text-center">
+                    <span class="text-gray-600 text-xs font-black uppercase tracking-widest block mb-1">Halaman</span>
+                    <span class="text-gray-800 font-black text-sm tracking-tighter">{{.Hadith.Number}} / {{.Info.Total}}</span>
+                </div>
+
+                {{if .NextHadith}}
+                <a href="/collection/{{$.Info.Slug}}/{{.NextHadith.Number}}" rel="next"
+                   class="flex items-center text-white bg-emerald-600 hover:bg-emerald-500 font-black text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all shadow-lg shadow-emerald-100 active:scale-95">
+                    Hadits {{.NextHadith.Number}}
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                {{else}}
+                <div class="invisible flex items-center px-4 py-3" aria-hidden="true">Placeholder</div>
+                {{end}}
+            </div>
+        </div>
+    </nav>
+
+    <script src="{{asset "script.js"}}"></script>
+    <script src="{{asset "favorites.js"}}"></script>
     <script>
-        function copyHadith() {
-            const text = `Hadith {{.Hadith.Number}} - {{.Info.Name}}\n\nTeks Arab:\n{{.Hadith.Arab}}\n\nTerjemahan:\n{{.Hadith.ID}}`;
-            const button = event.currentTarget;
-            copyToClipboard(text, button);
+        var HADITH = {
+            number: {{.Hadith.Number}},
+            collection: {{.Info.Name}},
+            prevUrl: {{if .PrevHadith}}{{printf "/collection/%s/%d" .Info.Slug .PrevHadith.Number}}{{else}}null{{end}},
+            nextUrl: {{if .NextHadith}}{{printf "/collection/%s/%d" .Info.Slug .NextHadith.Number}}{{else}}null{{end}}
+        };
+
+        // Texts are read from the page itself (not duplicated in the HTML).
+        function arabText() {
+            return document.getElementById('arabText').textContent.trim();
+        }
+        // Rebuilds the original "[Narrator]" notation from the <strong> tags.
+        function rawIdText() {
+            var out = '';
+            document.getElementById('idText').childNodes.forEach(function (n) {
+                out += (n.nodeType === 1 && n.tagName === 'STRONG') ? '[' + n.textContent + ']' : n.textContent;
+            });
+            return out.trim();
+        }
+
+        function copyHadith(e) {
+            var text = 'Hadith ' + HADITH.number + ' - ' + HADITH.collection + '\n\nTeks Arab:\n' + arabText() + '\n\nTerjemahan:\n' + rawIdText();
+            copyToClipboard(text, e.currentTarget);
         }
 
         function shareCurrentHadith() {
-            const title = 'Hadith {{.Hadith.Number}} - {{.Info.Name}}';
-            const text = '{{.Hadith.ID}}';
-            const url = window.location.href;
-            shareHadith(title, text, url);
+            shareHadith('Hadith ' + HADITH.number + ' - ' + HADITH.collection, rawIdText(), window.location.href);
+        }
+
+        function renderFavoriteState() {
+            var btn = document.getElementById('favorite-btn');
+            if (!btn || typeof favoritesManager === 'undefined' || !favoritesManager) return;
+            var isFav = favoritesManager.isFavorite(btn.dataset.hadithKey);
+            btn.classList.toggle('bg-red-500', isFav);
+            btn.classList.toggle('text-white', isFav);
+            btn.classList.toggle('shadow-red-100', isFav);
+            btn.classList.toggle('bg-gray-100', !isFav);
+            btn.classList.toggle('text-gray-700', !isFav);
+            btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+            document.getElementById('favorite-text').textContent = isFav ? 'Hapus dari Favorit' : 'Simpan';
         }
 
         function toggleFavorite() {
-            const btn = document.getElementById('favorite-btn');
-            const hadithKey = btn.dataset.hadithKey;
-            
-            // Build hadith data from separate attributes
-            const hadithData = {
+            var btn = document.getElementById('favorite-btn');
+            // Same data shape as before, so existing saved favorites keep working.
+            var hadithData = {
                 collectionName: btn.dataset.collectionName,
                 slug: btn.dataset.slug,
                 number: parseInt(btn.dataset.number),
-                arab: btn.dataset.arab,
-                id: btn.dataset.id,
+                arab: arabText(),
+                id: rawIdText(),
                 url: btn.dataset.url,
                 savedAt: new Date().toISOString()
             };
-            
-            if (favoritesManager) {
-                favoritesManager.toggleFavorite(hadithKey, hadithData);
-            }
-        }
-
-        function performSearch() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (query) {
-                window.location.href = '/search?q=' + encodeURIComponent(query);
+            if (typeof favoritesManager !== 'undefined' && favoritesManager) {
+                favoritesManager.toggleFavorite(btn.dataset.hadithKey, hadithData);
+                renderFavoriteState();
             }
         }
 
         // Settings management
         function toggleSettings() {
-            document.getElementById('settingsPanel').classList.toggle('active');
+            var panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('active');
+            document.getElementById('settingsBtn').setAttribute('aria-expanded', panel.classList.contains('active') ? 'true' : 'false');
         }
 
         function updateAppearance(key, value) {
-            const root = document.documentElement;
+            var root = document.documentElement;
             if (key === 'arabicSize') {
                 root.style.setProperty('--arabic-size', value + 'rem');
                 document.getElementById('arabicSizeLabel').textContent = value + 'rem';
@@ -337,166 +399,122 @@
                 root.style.setProperty('--id-size', value + 'rem');
                 document.getElementById('idSizeLabel').textContent = value + 'rem';
             } else if (key === 'arabicFont') {
+                ensureFont(value);
                 root.style.setProperty('--arabic-font', value);
             } else if (key === 'idFont') {
+                ensureFont(value);
                 root.style.setProperty('--id-font', value);
             }
-            localStorage.setItem('appearance_' + key, value);
+            try { localStorage.setItem('appearance_' + key, value); } catch (e) {}
         }
 
         function resetSettings() {
-            const defaults = {
+            var defaults = {
                 arabicSize: '1.5',
                 idSize: '1',
                 arabicFont: "'Noto Naskh Arabic'",
                 idFont: "'Inter'"
             };
-            
-            Object.keys(defaults).forEach(key => {
+            Object.keys(defaults).forEach(function (key) {
                 updateAppearance(key, defaults[key]);
-                const elId = key.includes('Font') ? key + 'Select' : key + 'Range';
-                const el = document.getElementById(elId);
+                var elId = key.indexOf('Font') >= 0 ? key + 'Select' : key + 'Range';
+                var el = document.getElementById(elId);
                 if (el) el.value = defaults[key];
             });
         }
 
-        // Initialize settings
-        document.addEventListener('DOMContentLoaded', function() {
-            const settingsConfig = [
+        function renderMarkdown(md) {
+            var html = window.marked ? marked.parse(md) : md.replace(/[&<>]/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]; });
+            // AI output is untrusted: always sanitize before inserting.
+            return window.DOMPurify ? DOMPurify.sanitize(html) : html.replace(/</g, '&lt;');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var settingsConfig = [
                 { id: 'arabicSizeRange', key: 'arabicSize', event: 'input' },
                 { id: 'idSizeRange', key: 'idSize', event: 'input' },
                 { id: 'arabicFontSelect', key: 'arabicFont', event: 'change' },
                 { id: 'idFontSelect', key: 'idFont', event: 'change' }
             ];
-
-            settingsConfig.forEach(s => {
-                const el = document.getElementById(s.id);
-                const savedValue = localStorage.getItem('appearance_' + s.key);
-                
+            settingsConfig.forEach(function (s) {
+                var el = document.getElementById(s.id);
+                var savedValue = null;
+                try { savedValue = localStorage.getItem('appearance_' + s.key); } catch (e) {}
                 if (savedValue) {
                     updateAppearance(s.key, savedValue);
                     el.value = savedValue;
                 }
-
-                el.addEventListener(s.event, (e) => {
+                el.addEventListener(s.event, function (e) {
                     updateAppearance(s.key, e.target.value);
                 });
             });
 
-            // Close settings when clicking outside
-            document.addEventListener('click', function(e) {
-                const panel = document.getElementById('settingsPanel');
-                const btn = e.target.closest('button');
-                if (panel.classList.contains('active') && !panel.contains(e.target) && (!btn || !btn.onclick || !btn.onclick.toString().includes('toggleSettings'))) {
-                    panel.classList.remove('active');
+            // Close settings when clicking outside or pressing Escape
+            document.addEventListener('click', function (e) {
+                var panel = document.getElementById('settingsPanel');
+                if (panel.classList.contains('active') && !panel.contains(e.target) && !e.target.closest('#settingsBtn')) {
+                    toggleSettings();
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && document.getElementById('settingsPanel').classList.contains('active')) {
+                    toggleSettings();
                 }
             });
 
-            // Update favorite button state
-            const btn = document.getElementById('favorite-btn');
-            if (btn && favoritesManager) {
-                const hadithKey = btn.dataset.hadithKey;
-                const isFavorite = favoritesManager.isFavorite(hadithKey);
-                
-                if (isFavorite) {
-                    btn.classList.remove('bg-gray-100', 'text-gray-600');
-                    btn.classList.add('bg-red-500', 'text-white', 'shadow-red-100');
-                    document.getElementById('favorite-text').textContent = 'Hapus dari Favorit';
-                }
-            }
+            renderFavoriteState();
 
-            // Handle cached AI explanation
-            const aiContent = document.getElementById('aiContent');
-            const aiResult = document.getElementById('aiResult');
-            const explainBtn = document.getElementById('explainBtn');
-            
-            if (aiContent && aiContent.textContent.trim() !== "") {
-                const rawMarkdown = aiContent.textContent;
-                aiContent.innerHTML = marked.parse(rawMarkdown);
-                aiResult.classList.remove('hidden');
-                explainBtn.classList.add('hidden');
+            // Cached AI explanation (stored as Markdown)
+            var aiContent = document.getElementById('aiContent');
+            if (aiContent && aiContent.textContent.trim() !== '') {
+                aiContent.innerHTML = renderMarkdown(aiContent.textContent);
+                document.getElementById('aiResult').classList.remove('hidden');
+                document.getElementById('explainBtn').classList.add('hidden');
             }
         });
 
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
-        });
-
-        // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowLeft' && e.ctrlKey) {
-                {{if .PrevHadith}}
-                window.location.href = '/collection/{{$.Info.Slug}}/{{.PrevHadith.Number}}';
-                {{end}}
-            } else if (e.key === 'ArrowRight' && e.ctrlKey) {
-                {{if .NextHadith}}
-                window.location.href = '/collection/{{$.Info.Slug}}/{{.NextHadith.Number}}';
-                {{end}}
+        // Keyboard navigation: Ctrl + ← / →
+        document.addEventListener('keydown', function (e) {
+            if (!e.ctrlKey) return;
+            if (e.key === 'ArrowLeft' && HADITH.prevUrl) {
+                window.location.href = HADITH.prevUrl;
+            } else if (e.key === 'ArrowRight' && HADITH.nextUrl) {
+                window.location.href = HADITH.nextUrl;
             }
         });
 
         async function fetchAIExplanation() {
-            const btn = document.getElementById('explainBtn');
-            const loading = document.getElementById('aiLoading');
-            const result = document.getElementById('aiResult');
-            const content = document.getElementById('aiContent');
+            var btn = document.getElementById('explainBtn');
+            var loading = document.getElementById('aiLoading');
+            var result = document.getElementById('aiResult');
+            var content = document.getElementById('aiContent');
+            var errorBox = document.getElementById('aiError');
+            var errorText = document.getElementById('aiErrorText');
 
             btn.classList.add('hidden');
+            errorBox.classList.add('hidden');
             loading.classList.remove('hidden');
             result.classList.add('hidden');
 
             try {
-                const response = await fetch(`/api/explain?slug={{.Info.Slug}}&number={{.Hadith.Number}}`);
+                var response = await fetch(document.getElementById('aiSection').dataset.explainUrl);
+                if (response.status === 429) {
+                    var err = new Error('rate');
+                    err.userMessage = 'Batas permintaan AI tercapai, coba beberapa menit lagi.';
+                    throw err;
+                }
                 if (!response.ok) throw new Error('Gagal mendapatkan penjelasan AI');
-                
-                const data = await response.json();
-                content.innerHTML = marked.parse(data.explanation);
-                
+                var data = await response.json();
+                content.innerHTML = renderMarkdown(data.explanation || '');
                 loading.classList.add('hidden');
                 result.classList.remove('hidden');
             } catch (error) {
                 console.error(error);
-                alert('Terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.');
-                btn.classList.remove('hidden');
+                errorText.textContent = error.userMessage || 'Terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.';
                 loading.classList.add('hidden');
+                errorBox.classList.remove('hidden');
             }
         }
     </script>
-</body>
-</html>
-
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-emerald-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-50 no-print">
-        <div class="container mx-auto px-4 py-5">
-            <div class="flex justify-between items-center">
-                {{if .PrevHadith}}
-                <a href="/collection/{{$.Info.Slug}}/{{.PrevHadith.Number}}" 
-                   class="flex items-center text-emerald-600 hover:text-emerald-800 font-black text-xs uppercase tracking-widest px-4 py-2 bg-emerald-50 rounded-xl transition-all active:scale-95">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
-                    Hadits {{.PrevHadith.Number}}
-                </a>
-                {{else}}
-                <div class="invisible flex items-center px-4 py-2">Placeholder</div>
-                {{end}}
-                
-                <div class="text-center">
-                    <span class="text-gray-400 text-[10px] font-black uppercase tracking-widest block mb-1">Halaman</span>
-                    <span class="text-gray-800 font-black text-sm tracking-tighter">{{.Hadith.Number}} / {{.Info.Total}}</span>
-                </div>
-                
-                {{if .NextHadith}}
-                <a href="/collection/{{$.Info.Slug}}/{{.NextHadith.Number}}" 
-                   class="flex items-center text-white bg-emerald-600 hover:bg-emerald-500 font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-100 active:scale-95">
-                    Hadits {{.NextHadith.Number}} 
-                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
-                </a>
-                {{else}}
-                <div class="invisible flex items-center px-4 py-2">Placeholder</div>
-                {{end}}
-            </div>
-        </div>
-    </nav>
 </body>
 </html>

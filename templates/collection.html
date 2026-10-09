@@ -3,50 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.SEO.Title}}</title>
-    <meta name="description" content="{{.SEO.Description}}">
-    <meta name="keywords" content="{{.SEO.Keywords}}">
-    <link rel="canonical" href="{{.SEO.Canonical}}">
-    <link rel="icon" type="image/png" href="/static/logo.png">
-    
+    {{template "seo" .}}
+    <link rel="icon" type="image/png" href="{{asset "logo.png"}}">
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#064e3b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Hadits">
-    <link rel="apple-touch-icon" href="/static/logo.png">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{.SEO.OGUrl}}">
-    <meta property="og:title" content="{{.SEO.Title}}">
-    <meta property="og:description" content="{{.SEO.Description}}">
-    <meta property="og:image" content="https://hadits.online/static/og-image.png">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="{{.SEO.OGUrl}}">
-    <meta property="twitter:title" content="{{.SEO.Title}}">
-    <meta property="twitter:description" content="{{.SEO.Description}}">
-    <meta property="twitter:image" content="https://hadits.online/static/og-image.png">
+    <link rel="apple-touch-icon" href="{{asset "logo.png"}}">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .arabic-text {
-            font-family: 'Noto Naskh Arabic', serif;
-            line-height: 2.5;
-            font-size: 1.5rem;
-        }
-        .indonesian-text {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.8;
-        }
-    </style>
+    <link rel="stylesheet" href="{{asset "style.css"}}">
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
     <!-- Header -->
@@ -54,69 +26,72 @@
 
     <!-- Hero Header -->
     <section class="bg-emerald-900 text-white py-12 md:py-16 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" 
-             style="background-image: url('/static/patter_ketupat.png'); background-size: 100px; background-repeat: repeat;">
+        <div class="absolute inset-0 opacity-10"
+             style="background-image: url('{{asset "patter_ketupat.png"}}'); background-size: 100px; background-repeat: repeat;">
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-700/50 to-emerald-700"></div>
-        
+
         <div class="container mx-auto px-4 relative z-10 text-center">
             <h1 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">{{.Info.Name}}</h1>
-            <p class="text-emerald-100/70 text-lg md:text-xl font-light">Total: <span class="text-white font-bold">{{.Info.Total}}</span> Hadits Terpercaya</p>
-            
-            <div class="mt-8 max-w-2xl mx-auto">
-                <form onsubmit="searchInCollection(event)" class="relative group">
-                    <input type="text" id="collectionSearch" 
-                           placeholder="Cari dalam kitab {{.Info.Name}}..." 
-                           class="w-full px-6 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-emerald-100/50 focus:outline-none focus:bg-white focus:text-gray-900 transition-all shadow-inner backdrop-blur-sm">
-                    <button type="submit" 
-                            class="absolute right-2 top-2 bottom-2 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg">
+            <p class="text-emerald-100/90 text-lg md:text-xl font-light">Total: <span class="text-white font-bold">{{.Info.Total}}</span> Hadits Terpercaya</p>
+
+            <div class="mt-8 max-w-2xl mx-auto grid gap-3 sm:grid-cols-[1fr_auto]">
+                <form action="/search" method="get" role="search" class="js-search-form relative">
+                    <input type="hidden" name="collections" value="{{.Collection}}">
+                    <label for="collectionSearch" class="sr-only">Cari dalam kitab {{.Info.Name}}</label>
+                    <input type="search" name="q" id="collectionSearch" enterkeyhint="search" autocomplete="off"
+                           placeholder="Cari dalam kitab {{.Info.Name}}..."
+                           class="w-full pl-6 pr-24 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-emerald-100 focus:outline-none focus:bg-white focus:text-gray-900 focus:placeholder-gray-500 transition-colors shadow-inner">
+                    <button type="submit" aria-label="Cari"
+                            class="absolute right-2 top-2 bottom-2 inline-flex items-center px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg">
                         Cari
                     </button>
+                </form>
+                <form action="/collection/{{.Collection}}" method="get" class="flex gap-2" id="jumpForm">
+                    <label for="jumpNumber" class="sr-only">Lompat ke nomor hadits</label>
+                    <input type="number" id="jumpNumber" min="1" inputmode="numeric" required placeholder="No."
+                           class="w-24 px-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-emerald-100 focus:outline-none focus:bg-white focus:text-gray-900 transition-colors">
+                    <button type="submit" class="px-5 py-4 bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold rounded-2xl transition whitespace-nowrap">Lompat ke nomor</button>
                 </form>
             </div>
         </div>
     </section>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-12 flex-grow">
+    <main id="main" class="container mx-auto px-4 py-12 flex-grow">
         <!-- Hadiths List -->
         <section id="hadiths-container" class="space-y-8">
             {{if .Data}}
                 <!-- Pagination Info Top -->
                 <div class="bg-white rounded-2xl shadow-sm border border-emerald-50 p-4 md:p-6 flex flex-wrap justify-between items-center gap-4 mb-8">
-                    <div class="text-gray-600 font-medium text-sm">
-                        Menampilkan hadits <span class="text-emerald-600">{{if gt .Pagination.CurrentPage 1}}{{subtract (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.PerPage | add1}}{{else}}1{{end}}</span> 
-                        - <span class="text-emerald-600">{{if lt (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.TotalItems}}{{multiply .Pagination.CurrentPage .Pagination.PerPage}}{{else}}{{.Pagination.TotalItems}}{{end}}</span> 
-                        dari <span class="text-emerald-600">{{.Pagination.TotalItems}}</span> hadits
+                    <div class="text-gray-700 font-medium text-sm">
+                        Menampilkan hadits <span class="text-emerald-700">{{if gt .Pagination.CurrentPage 1}}{{subtract (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.PerPage | add1}}{{else}}1{{end}}</span>
+                        - <span class="text-emerald-700">{{if lt (multiply .Pagination.CurrentPage .Pagination.PerPage) .Pagination.TotalItems}}{{multiply .Pagination.CurrentPage .Pagination.PerPage}}{{else}}{{.Pagination.TotalItems}}{{end}}</span>
+                        dari <span class="text-emerald-700">{{.Pagination.TotalItems}}</span> hadits
                     </div>
-                    
-                    <div class="flex items-center space-x-1">
+
+                    <nav aria-label="Paginasi" class="flex flex-wrap items-center gap-1">
                         {{if .Pagination.HasPrev}}
-                            <a href="?page={{subtract .Pagination.CurrentPage 1}}" 
-                               class="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-emerald-600 hover:text-white transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <a href="{{if eq .Pagination.CurrentPage 2}}/collection/{{.Collection}}{{else}}?page={{subtract .Pagination.CurrentPage 1}}{{end}}" rel="prev" aria-label="Halaman sebelumnya"
+                               class="inline-flex items-center justify-center min-w-[44px] min-h-[44px] bg-gray-100 text-gray-700 rounded-lg hover:bg-emerald-600 hover:text-white transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                             </a>
                         {{end}}
-                        
                         {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
                             {{if eq $i $.Pagination.CurrentPage}}
-                                <span class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-md">{{$i}}</span>
+                                <span aria-current="page" class="inline-flex items-center justify-center min-w-[44px] min-h-[44px] px-3 bg-emerald-600 text-white font-bold rounded-lg shadow-md">{{$i}}</span>
                             {{else}}
-                                <a href="?page={{$i}}" 
-                                   class="px-4 py-2 text-gray-600 font-medium rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition"
-                                   onclick="loadPage({{$i}}); return false;">
-                                    {{$i}}
-                                </a>
+                                <a href="{{if eq $i 1}}/collection/{{$.Collection}}{{else}}?page={{$i}}{{end}}" aria-label="Halaman {{$i}}"
+                                   class="inline-flex items-center justify-center min-w-[44px] min-h-[44px] px-3 text-gray-700 font-medium rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition">{{$i}}</a>
                             {{end}}
                         {{end}}
-                        
                         {{if .Pagination.HasNext}}
-                            <a href="?page={{add .Pagination.CurrentPage 1}}" 
-                               class="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-emerald-600 hover:text-white transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            <a href="?page={{add .Pagination.CurrentPage 1}}" rel="next" aria-label="Halaman berikutnya"
+                               class="inline-flex items-center justify-center min-w-[44px] min-h-[44px] bg-gray-100 text-gray-700 rounded-lg hover:bg-emerald-600 hover:text-white transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                             </a>
                         {{end}}
-                    </div>
+                    </nav>
                 </div>
 
                 <!-- Hadiths Cards -->
@@ -129,20 +104,20 @@
                                 <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                                     {{.Number}}
                                 </div>
-                                <h3 class="text-xl font-black text-gray-800 tracking-tight">Hadits Ke-{{.Number}}</h3>
+                                <h2 class="text-xl font-black text-gray-800 tracking-tight">Hadits Ke-{{.Number}}</h2>
                             </div>
-                            <a href="/collection/{{$.Collection}}/{{.Number}}" 
-                               class="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl font-bold text-sm transition-all">
-                                Detail 
-                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
+                            <a href="/collection/{{$.Collection}}/{{.Number}}" aria-label="Detail hadits {{$.Info.Name}} nomor {{.Number}}"
+                               class="inline-flex items-center px-4 py-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl font-bold text-sm transition-all">
+                                Detail
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M3 12h18"/></svg>
                             </a>
                         </div>
-                        
+
                         <div class="space-y-8">
-                            <div class="arabic-text text-right text-gray-800 leading-loose text-2xl md:text-3xl font-amiri">
+                            <div lang="ar" dir="rtl" class="arabic-text text-right text-gray-800">
                                 {{.Arab}}
                             </div>
-                            <div class="indonesian-text text-gray-600 text-base md:text-lg leading-relaxed border-l-4 border-emerald-100 pl-6 py-2">
+                            <div class="indonesian-text text-gray-700 text-base md:text-lg leading-relaxed border-l-4 border-emerald-100 pl-6 py-2">
                                 <span class="font-bold text-emerald-700 not-italic uppercase text-xs tracking-widest block mb-2">Terjemahan:</span>
                                 {{.ID | formatHadith}}
                             </div>
@@ -154,45 +129,45 @@
 
                 <!-- Bottom Pagination -->
                 {{if gt .Pagination.TotalPages 1}}
-                <div class="bg-white rounded-2xl shadow-lg p-6 flex justify-center mt-12 border border-emerald-50">
-                    <div class="flex items-center space-x-2">
+                <nav aria-label="Paginasi bawah" class="bg-white rounded-2xl shadow-lg p-4 md:p-6 flex justify-center mt-12 border border-emerald-50">
+                    <div class="flex items-center gap-2">
                         {{if .Pagination.HasPrev}}
-                            <a href="?page={{subtract .Pagination.CurrentPage 1}}" 
-                               class="px-5 py-3 bg-gray-50 text-gray-600 rounded-xl hover:bg-emerald-600 hover:text-white font-bold transition">
+                            <a href="{{if eq .Pagination.CurrentPage 2}}/collection/{{.Collection}}{{else}}?page={{subtract .Pagination.CurrentPage 1}}{{end}}" rel="prev"
+                               class="px-5 py-3 bg-gray-50 text-gray-700 rounded-xl hover:bg-emerald-600 hover:text-white font-bold transition">
                                 Sebelumnya
                             </a>
                         {{end}}
-                        
+
                         <div class="hidden md:flex items-center space-x-1">
                         {{range $i := pageNumbers .Pagination.CurrentPage .Pagination.TotalPages}}
                             {{if eq $i $.Pagination.CurrentPage}}
-                                <span class="px-5 py-3 bg-emerald-600 text-white font-black rounded-xl shadow-md">{{$i}}</span>
+                                <span aria-current="page" class="px-5 py-3 bg-emerald-600 text-white font-black rounded-xl shadow-md">{{$i}}</span>
                             {{else}}
-                                <a href="?page={{$i}}" 
-                                   class="px-5 py-3 text-gray-600 font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition">
+                                <a href="{{if eq $i 1}}/collection/{{$.Collection}}{{else}}?page={{$i}}{{end}}"
+                                   class="px-5 py-3 text-gray-700 font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition">
                                     {{$i}}
                                 </a>
                             {{end}}
                         {{end}}
                         </div>
-                        
-                        <span class="md:hidden font-bold text-gray-500">{{.Pagination.CurrentPage}} / {{.Pagination.TotalPages}}</span>
-                        
+
+                        <span class="md:hidden font-bold text-gray-700">{{.Pagination.CurrentPage}} / {{.Pagination.TotalPages}}</span>
+
                         {{if .Pagination.HasNext}}
-                            <a href="?page={{add .Pagination.CurrentPage 1}}" 
+                            <a href="?page={{add .Pagination.CurrentPage 1}}" rel="next"
                                class="px-5 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 font-black shadow-lg transition">
                                 Selanjutnya
                             </a>
                         {{end}}
                     </div>
-                </div>
+                </nav>
                 {{end}}
             {{else}}
                 <div class="bg-white rounded-[2rem] shadow-xl p-20 text-center border border-dashed border-emerald-200">
                     <div class="w-20 h-20 bg-emerald-50 text-emerald-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
-                    <h3 class="text-2xl font-black text-gray-800 mb-2">Kosong</h3>
+                    <h2 class="text-2xl font-black text-gray-800 mb-2">Kosong</h2>
                     <p class="text-gray-500">Tidak ada hadits yang ditemukan dalam koleksi ini.</p>
                 </div>
             {{end}}
@@ -202,32 +177,14 @@
     <!-- Footer -->
     {{template "footer" .}}
 
-    <script src="/static/script.js"></script>
+    <script src="{{asset "script.js"}}"></script>
     <script>
-        function performSearch() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (query) {
-                window.location.href = '/search?q=' + encodeURIComponent(query);
-            }
-        }
-
-        function searchInCollection(event) {
-            event.preventDefault();
-            const query = document.getElementById('collectionSearch').value.trim();
-            if (query) {
-                window.location.href = '/search?q=' + encodeURIComponent(query) + '&collections={{.Collection}}';
-            }
-        }
-
-        // Loading states for pagination
-        function loadPage(page) {
-            const collectionContainer = document.getElementById('hadiths-container');
-            showLoading(collectionContainer);
-            
-            setTimeout(() => {
-                window.location.href = '?page=' + page;
-            }, 300);
-        }
+        // "Lompat ke nomor": go straight to /collection/{slug}/{n}.
+        document.getElementById('jumpForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var n = parseInt(document.getElementById('jumpNumber').value, 10);
+            if (n > 0) window.location.href = '/collection/{{.Collection}}/' + n;
+        });
     </script>
 </body>
 </html>
