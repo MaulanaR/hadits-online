@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -28,9 +29,11 @@ var siteURL = func() string {
 
 const siteName = "hadits.online"
 
-// defaultOGImage: TODO(owner) supply a 1200x630 share image (e.g.
-// static/og-image.png) and point this at it; the logo is used until then.
-func defaultOGImage() string { return siteURL + "/static/logo.png" }
+// defaultOGImage is the 1200x630 share image (static/og-image.png: logo on
+// the emerald ketupat background).
+func defaultOGImage() string { return siteURL + "/static/og-image.png" }
+
+const ogImageWidth, ogImageHeight = 1200, 630
 
 // SEOData is rendered by templates/components/seo.html.
 type SEOData struct {
@@ -39,6 +42,8 @@ type SEOData struct {
 	Keywords    string
 	OGImage     string
 	OGImageAlt  string
+	OGImageW    int
+	OGImageH    int
 	OGUrl       string
 	OGType      string
 	Canonical   string
@@ -46,12 +51,16 @@ type SEOData struct {
 	PrevURL     string
 	NextURL     string
 	JSONLD      template.JS
+	// Search-engine ownership tokens (home page only; see siteVerification).
+	GoogleVerification string
+	BingVerification   string
 }
 
 func (s SEOData) withDefaults() SEOData {
 	if s.OGImage == "" {
 		s.OGImage = defaultOGImage()
-		s.OGImageAlt = "Logo hadits.online"
+		s.OGImageAlt = "hadits.online - Pusat Belajar Hadits Bahasa Indonesia"
+		s.OGImageW, s.OGImageH = ogImageWidth, ogImageHeight
 	}
 	if s.OGType == "" {
 		s.OGType = "website"
@@ -60,6 +69,38 @@ func (s SEOData) withDefaults() SEOData {
 		s.OGUrl = s.Canonical
 	}
 	return s
+}
+
+// siteVerification returns the Google Search Console and Bing Webmaster
+// verification tokens from GOOGLE_SITE_VERIFICATION / BING_SITE_VERIFICATION
+// (read per call so values from .env and test overrides apply).
+func siteVerification() (google, bing string) {
+	return strings.TrimSpace(os.Getenv("GOOGLE_SITE_VERIFICATION")), strings.TrimSpace(os.Getenv("BING_SITE_VERIFICATION"))
+}
+
+// reIndexNowKey is the key format allowed by the IndexNow protocol.
+var reIndexNowKey = regexp.MustCompile(`^[A-Za-z0-9-]{8,128}$`)
+
+// indexNowKey returns INDEXNOW_KEY when it is a valid IndexNow key.
+func indexNowKey() string {
+	k := strings.TrimSpace(os.Getenv("INDEXNOW_KEY"))
+	if !reIndexNowKey.MatchString(k) {
+		return ""
+	}
+	return k
+}
+
+// indexNowKeyHandler serves /{key}.txt with the key as body (IndexNow
+// ownership proof) and 404s for any other name or when no key is set.
+func indexNowKeyHandler(w http.ResponseWriter, r *http.Request) {
+	key := indexNowKey()
+	if key == "" || mux.Vars(r)["key"] != key {
+		notFoundHandler(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	io.WriteString(w, key)
 }
 
 // jsonLD marshals structured data (json.Marshal escapes <, > and &, so the
@@ -240,6 +281,37 @@ func matanOf(id string) string {
 		rest = string(unicode.ToUpper(r)) + rest[size:]
 	}
 	return rest
+}
+
+// Search results show about 60 characters of a title and ~155 of a
+// description.
+const (
+	maxTitleRunes = 65
+	maxDescRunes  = 158
+)
+
+// hadithTitle is "<matan…> – HR. <Kitab> No. <n>" within maxTitleRunes (the
+// site name is shown by search engines from the WebSite structured data).
+func hadithTitle(collection string, number int, matan string) string {
+	ref := fmt.Sprintf("HR. %s No. %d", collection, number)
+	if matan == "" {
+		return fmt.Sprintf("Hadits %s No. %d | %s", collection, number, siteName)
+	}
+	budget := max(30, maxTitleRunes-utf8.RuneCountInString(ref)-3)
+	return truncateRunes(matan, budget) + " – " + ref
+}
+
+// hadithDescription is the matan, completed with the source when it is short
+// so that no hadith page gets a thin description.
+func hadithDescription(collection string, number int, matan string) string {
+	tail := fmt.Sprintf("HR. %s No. %d, lengkap dengan teks Arab dan terjemahan Indonesia.", collection, number)
+	switch {
+	case matan == "":
+		return "Hadits riwayat " + strings.TrimPrefix(tail, "HR. ")
+	case utf8.RuneCountInString(matan) < 100:
+		return truncateRunes(strings.TrimRight(matan, " .,;:")+". "+tail, maxDescRunes)
+	}
+	return truncateRunes(matan, maxDescRunes)
 }
 
 // truncateRunes cuts s to at most n runes at a word boundary, adding "…".

@@ -223,6 +223,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		Canonical:   siteURL + "/",
 		JSONLD:      homeJSONLD(),
 	}
+	seo.GoogleVerification, seo.BingVerification = siteVerification()
 	render(w, "index.html", http.StatusOK, PageData{SEO: seo.withDefaults(), Data: data.Info, Daily: dailyHadith(now)})
 }
 
@@ -238,8 +239,9 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 	totalItems := c.count()
 	totalPages := max(1, (totalItems+ItemsPerPage-1)/ItemsPerPage)
 
-	// ?page=N: invalid -> 301 to the first page, past the end -> 301 to the
-	// last page (no duplicate content).
+	// ?page=N: invalid -> 302 to the first page, past the end -> 302 to the
+	// last page; ?page=1 and non-canonical spellings (?page=02) -> 301 to the
+	// canonical URL (no duplicate content).
 	page := 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		p, err := strconv.Atoi(pageStr)
@@ -249,6 +251,12 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		case p > totalPages:
 			http.Redirect(w, r, base+"?page="+strconv.Itoa(totalPages), http.StatusFound)
+			return
+		case p == 1:
+			http.Redirect(w, r, base, http.StatusMovedPermanently)
+			return
+		case pageStr != strconv.Itoa(p):
+			http.Redirect(w, r, base+"?page="+strconv.Itoa(p), http.StatusMovedPermanently)
 			return
 		}
 		page = p
@@ -285,7 +293,7 @@ func collectionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return siteURL + base + "?page=" + strconv.Itoa(p)
 	}
-	description := fmt.Sprintf("Daftar lengkap hadits dari kitab %s. Tersedia %d hadits dengan terjemahan Indonesia.", info.Name, info.Total)
+	description := fmt.Sprintf("Baca %d hadits dari kitab %s lengkap dengan teks Arab dan terjemahan Indonesia. Telusuri per nomor, cari kata kunci, dan simpan hadits favorit.", info.Total, info.Name)
 	title := fmt.Sprintf("Koleksi Hadits %s - hadits.online", info.Name)
 	if page > 1 {
 		title = fmt.Sprintf("Koleksi Hadits %s – Halaman %d - hadits.online", info.Name, page)
@@ -341,6 +349,11 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 		notFoundHandler(w, r)
 		return
 	}
+	// "/01" or "/+1" -> 301 "/1" (one URL per hadith).
+	if canon := strconv.Itoa(number); vars["number"] != canon {
+		http.Redirect(w, r, "/collection/"+slug+"/"+canon, http.StatusMovedPermanently)
+		return
+	}
 	if cacheable(w, r, ccPage, strconv.FormatUint(c.generation(), 10)) {
 		return
 	}
@@ -362,14 +375,10 @@ func hadithHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	matan := matanOf(hadith.ID)
-	title := fmt.Sprintf("Hadits %s No. %d | hadits.online", info.Name, hadith.Number)
-	if matan != "" {
-		title = fmt.Sprintf("%s – HR. %s No. %d | hadits.online", truncateRunes(matan, 55), info.Name, hadith.Number)
-	}
 	pageURL := fmt.Sprintf("%s/collection/%s/%d", siteURL, slug, hadith.Number)
 	seo := SEOData{
-		Title:       title,
-		Description: truncateRunes(matan, 155),
+		Title:       hadithTitle(info.Name, hadith.Number, matan),
+		Description: hadithDescription(info.Name, hadith.Number, matan),
 		Keywords:    fmt.Sprintf("hadits %s %d, %s no %d, HR %s", info.Name, hadith.Number, info.Name, hadith.Number, info.Name),
 		Canonical:   pageURL,
 		OGType:      "article",
@@ -426,6 +435,7 @@ func newRouter() http.Handler {
 	r.HandleFunc("/api/midtrans/token", withCacheControl("no-store", midtransTokenHandler))
 	r.HandleFunc("/faq", faqHandler)
 	r.HandleFunc("/robots.txt", withCacheControl(ccLong, robotsHandler))
+	r.HandleFunc("/{key:[A-Za-z0-9-]{8,128}}.txt", indexNowKeyHandler) // IndexNow key file (INDEXNOW_KEY)
 	r.HandleFunc("/sitemap.xml", withCacheControl(ccLong, sitemapHandler))
 	r.HandleFunc("/sitemap-{name:[a-z-]+}.xml", withCacheControl(ccLong, sitemapPartHandler))
 	r.HandleFunc("/manifest.json", withCacheControl(ccLong, func(w http.ResponseWriter, r *http.Request) {

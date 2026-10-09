@@ -18,6 +18,8 @@ func TestRoutesSmoke(t *testing.T) {
 	oldKey := geminiApiKey
 	geminiApiKey = "" // never call Gemini from tests
 	defer func() { geminiApiKey = oldKey }()
+	t.Setenv("GOOGLE_SITE_VERIFICATION", "test-google-token")
+	t.Setenv("BING_SITE_VERIFICATION", "test-bing-token")
 	srv := httptest.NewServer(newRouter())
 	defer srv.Close()
 	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
@@ -29,13 +31,19 @@ func TestRoutesSmoke(t *testing.T) {
 	}{
 		{"/", 200}, {"/index.html", 301}, {"/favorites", 200}, {"/faq", 200}, {"/faq/", 301}, {"/donate", 200},
 		{"/collection/bukhari", 200}, {"/collection/bukhari?page=2", 200}, {"/collection/bukhari?page=0", 302},
-		{"/collection/bukhari?page=99999", 302}, {"/collection/bukhari/1", 200}, {"/collection/bukhari/2977", 200},
+		{"/collection/bukhari?page=99999", 302}, {"/collection/bukhari?page=1", 301}, {"/collection/bukhari?page=02", 301},
+		{"/collection/bukhari/1", 200}, {"/collection/bukhari/01", 301}, {"/collection/bukhari/2977", 200},
 		{"/collection/bukhari/2978", 404}, {"/collection/bukhari/x", 404}, {"/collection/nope", 404}, {"/collection/nope/1", 404},
 		{"/search?q=niat", 200}, {"/search?q=%28", 200}, {"/search?q=a%26b%23c", 200}, {"/search?q=", 307},
 		{"/search?q=zzzqqq", 200}, {"/search?q=bukhari+1", 200}, {"/search?q=bukhari+1&text=1", 200}, {"/search?q=niat&page=9999", 200},
 		{"/robots.txt", 200}, {"/sitemap.xml", 200}, {"/sitemap-pages.xml", 200}, {"/sitemap-bukhari.xml", 200}, {"/sitemap-nope.xml", 404},
 		{"/manifest.json", 200}, {"/service-worker.js", 200}, {"/static/style.css", 200}, {"/static/", 404}, {"/nope", 404},
 		{"/api/explain?slug=bukhari&number=1", 200}, {"/api/explain?slug=../go&number=1", 404},
+	}
+	redirectTo := map[string]string{
+		"/collection/bukhari?page=1":  "/collection/bukhari",
+		"/collection/bukhari?page=02": "/collection/bukhari?page=2",
+		"/collection/bukhari/01":      "/collection/bukhari/1",
 	}
 	for _, c := range cases {
 		req, _ := http.NewRequest("GET", srv.URL+c.path, nil)
@@ -57,6 +65,14 @@ func TestRoutesSmoke(t *testing.T) {
 		if resp.StatusCode != c.status {
 			t.Errorf("%s: status %d, want %d", c.path, resp.StatusCode, c.status)
 			continue
+		}
+		if loc, want := resp.Header.Get("Location"), redirectTo[c.path]; want != "" && loc != want {
+			t.Errorf("%s: Location %q, want %q", c.path, loc, want)
+		}
+		if hasMeta := strings.Contains(string(b), `<meta name="google-site-verification" content="test-google-token">`) &&
+			strings.Contains(string(b), `<meta name="msvalidate.01" content="test-bing-token">`); hasMeta != (c.path == "/") && resp.StatusCode == 200 &&
+			strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") {
+			t.Errorf("%s: verification meta present=%v, want only on the home page", c.path, hasMeta)
 		}
 		if c.path == "/search?q=bukhari+1" && (!strings.Contains(string(b), "data-direct-only") || strings.Contains(string(b), "<article")) {
 			t.Errorf("%s: expected direct hit only", c.path)
